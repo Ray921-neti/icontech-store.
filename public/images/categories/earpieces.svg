@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <rect width="200" height="200" rx="32" fill="#FDF2F8" />
+  <!-- Charging case -->
+  <rect x="65" y="60" width="70" height="85" rx="20" fill="#0F172A" />
+  <path d="M65 85 H135" stroke="#334155" stroke-width="2" />
+  <!-- Status LED -->
+  <circle cx="100" cy="98" r="3" fill="#EC4899" />
+  <!-- Earbuds popping out slightly -->
+  <circle cx="82" cy="52" r="12" fill="#F8FAFC" />
+  <rect x="80" y="58" width="6" height="16" rx="3" fill="#F8FAFC" />
+  <circle cx="118" cy="52" r="12" fill="#F8FAFC" />
+  <rect x="114" y="58" width="6" height="16" rx="3" fill="#F8FAFC" />
+</svg>

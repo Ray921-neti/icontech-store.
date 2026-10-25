@@ -1,0 +1,21 @@
+# Git attributes for ICONTECH Gadgets & Repair Management
+# Ensures Git and GitHub handle images and binary assets cleanly without corruption
+
+# Binary image formats - never convert line endings or filter
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.bmp binary
+*.avif binary
+
+# Vector images and web assets
+*.svg text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.css text eol=lf
+*.html text eol=lf

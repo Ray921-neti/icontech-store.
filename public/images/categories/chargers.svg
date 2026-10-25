@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <rect width="200" height="200" rx="32" fill="#FEFCE8" />
+  <!-- Plug pins -->
+  <rect x="75" y="32" width="10" height="22" rx="3" fill="#64748B" />
+  <rect x="115" y="32" width="10" height="22" rx="3" fill="#64748B" />
+  <!-- Main charger body -->
+  <rect x="58" y="50" width="84" height="96" rx="16" fill="#0F172A" />
+  <rect x="64" y="56" width="72" height="84" rx="12" fill="#1E293B" />
+  <!-- Lightning bolt icon -->
+  <path d="M104 70 L90 92 H102 L96 114 L114 90 H102 Z" fill="#EAB308" />
+  <!-- USB C port -->
+  <rect x="85" y="124" width="30" height="8" rx="4" fill="#0F172A" stroke="#475569" stroke-width="2" />
+</svg>

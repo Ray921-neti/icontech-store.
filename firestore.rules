@@ -1,0 +1,75 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all unknown paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'raydiamond108@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Products catalog: Publicly viewable, admin manageable
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidId(productId);
+    }
+
+    // Customer orders
+    match /orders/{orderId} {
+      // Allow reading single order for verification or admin read/list
+      allow get: if isValidId(orderId);
+      allow list: if isAdmin();
+      
+      // Customer creation with strict initial state
+      allow create: if isValidId(orderId) &&
+        request.resource.data.orderStatus == 'pending' &&
+        (request.resource.data.paymentStatus == 'unpaid' || request.resource.data.paymentStatus == 'pending_verification') &&
+        request.resource.data.customerName is string &&
+        request.resource.data.customerPhone is string &&
+        request.resource.data.totalAmount is number;
+
+      // Only admin can update or delete orders
+      allow update, delete: if isAdmin() && isValidId(orderId);
+    }
+
+    // Gadget repairs
+    match /repairs/{repairId} {
+      // Customers can look up their repair ticket with reference ID; admins can list
+      allow get: if isValidId(repairId);
+      allow list: if isAdmin();
+
+      // Customer can create repair request starting in 'Received'
+      allow create: if isValidId(repairId) &&
+        request.resource.data.repairStatus == 'Received' &&
+        request.resource.data.customerName is string &&
+        request.resource.data.customerPhone is string &&
+        request.resource.data.gadgetType is string &&
+        request.resource.data.brandModel is string &&
+        request.resource.data.faultDescription is string;
+
+      // Only admin/technicians can update status, quote prices, diagnose, or delete
+      allow update, delete: if isAdmin() && isValidId(repairId);
+    }
+
+    // Admins registry
+    match /admins/{adminId} {
+      allow read: if isAdmin() && isValidId(adminId);
+      allow write: if isSignedIn() && request.auth.token.email == 'raydiamond108@gmail.com' && isValidId(adminId);
+    }
+  }
+}

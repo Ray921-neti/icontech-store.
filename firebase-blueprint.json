@@ -1,0 +1,113 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "Gadgets, smartphones, electronics, and accessories available for sale.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique product ID" },
+        "name": { "type": "string", "description": "Product title", "maxLength": 200 },
+        "category": { "type": "string", "description": "Category slug or name", "maxLength": 100 },
+        "brand": { "type": "string", "description": "Brand name", "maxLength": 100 },
+        "price": { "type": "number", "description": "Selling price in Nigerian Naira" },
+        "originalPrice": { "type": "number", "description": "Original price before discount" },
+        "stock": { "type": "number", "description": "Inventory count available" },
+        "images": { "type": "array", "description": "Array of image URLs" },
+        "description": { "type": "string", "description": "Product description", "maxLength": 2000 },
+        "specifications": { "type": "object", "description": "Key-value specifications" },
+        "isFeatured": { "type": "boolean", "description": "Whether highlighted on homepage" },
+        "isFlashDeal": { "type": "boolean", "description": "Whether on flash sale" },
+        "inStock": { "type": "boolean", "description": "Stock availability flag" },
+        "rating": { "type": "number", "description": "Rating score out of 5" },
+        "reviewsCount": { "type": "number", "description": "Number of reviews" },
+        "createdAt": { "type": "string", "description": "ISO timestamp or server time" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp or server time" }
+      },
+      "required": ["name", "category", "price", "stock", "description"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Customer purchase order for gadgets and accessories.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Order reference code e.g. ICON-ORD-XXXXX" },
+        "customerName": { "type": "string", "description": "Customer full name", "maxLength": 120 },
+        "customerPhone": { "type": "string", "description": "Active phone or WhatsApp number", "maxLength": 30 },
+        "customerEmail": { "type": "string", "description": "Customer email if provided", "maxLength": 120 },
+        "deliveryMethod": { "type": "string", "description": "Delivery or in-store pickup", "enum": ["delivery", "pickup"] },
+        "deliveryAddress": { "type": "string", "description": "Full street address or landmark in Ondo", "maxLength": 300 },
+        "items": { "type": "array", "description": "List of cart items" },
+        "subtotal": { "type": "number", "description": "Order subtotal in Naira" },
+        "deliveryFee": { "type": "number", "description": "Delivery fee in Naira" },
+        "totalAmount": { "type": "number", "description": "Grand total in Naira" },
+        "paymentMethod": { "type": "string", "description": "Payment type", "enum": ["cash_on_delivery", "bank_transfer", "cash_on_pickup"] },
+        "paymentStatus": { "type": "string", "description": "Payment verification status", "enum": ["unpaid", "pending_verification", "paid", "refunded"] },
+        "paymentReference": { "type": "string", "description": "Bank transfer reference or cash receipt note", "maxLength": 120 },
+        "orderStatus": { "type": "string", "description": "Order lifecycle status", "enum": ["pending", "confirmed", "processing", "shipped", "ready_for_pickup", "delivered", "cancelled"] },
+        "notes": { "type": "string", "description": "Customer or order notes", "maxLength": 500 },
+        "createdAt": { "type": "string", "description": "Creation timestamp" },
+        "updatedAt": { "type": "string", "description": "Update timestamp" }
+      },
+      "required": ["customerName", "customerPhone", "deliveryMethod", "items", "totalAmount", "paymentMethod", "orderStatus"]
+    },
+    "RepairJob": {
+      "title": "RepairJob",
+      "description": "Device repair ticket submitted by customer and managed by technician.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Repair reference code e.g. ICON-REP-XXXXX" },
+        "customerName": { "type": "string", "description": "Customer full name", "maxLength": 120 },
+        "customerPhone": { "type": "string", "description": "Customer phone number", "maxLength": 30 },
+        "customerEmail": { "type": "string", "description": "Customer email", "maxLength": 120 },
+        "gadgetType": { "type": "string", "description": "Device type e.g. Smartphone, Laptop", "maxLength": 80 },
+        "brandModel": { "type": "string", "description": "Exact brand and model e.g. iPhone 13 Pro Max", "maxLength": 120 },
+        "faultCategory": { "type": "string", "description": "Primary issue category", "maxLength": 100 },
+        "faultDescription": { "type": "string", "description": "Detailed explanation of the issue", "maxLength": 1500 },
+        "photoUrl": { "type": "string", "description": "Optional photo of damaged device", "maxLength": 1000 },
+        "passcodeProvided": { "type": "string", "description": "Pattern or PIN for testing if provided", "maxLength": 50 },
+        "repairStatus": {
+          "type": "string",
+          "description": "Current status in repair pipeline",
+          "enum": ["Received", "Diagnosing", "Awaiting Customer Approval", "Awaiting Parts", "Repairing", "Ready for Collection", "Completed", "Cancelled"]
+        },
+        "quotedPrice": { "type": "number", "description": "Quoted repair cost in Naira" },
+        "diagnosticNotes": { "type": "string", "description": "Technician diagnosis and parts required", "maxLength": 1500 },
+        "estimatedCompletion": { "type": "string", "description": "Expected ready date", "maxLength": 80 },
+        "paymentStatus": { "type": "string", "description": "Payment status for repair", "enum": ["unpaid", "deposit_paid", "paid"] },
+        "createdAt": { "type": "string", "description": "Submission timestamp" },
+        "updatedAt": { "type": "string", "description": "Update timestamp" }
+      },
+      "required": ["customerName", "customerPhone", "gadgetType", "brandModel", "faultDescription", "repairStatus"]
+    },
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "Admin authorization record for store managers and technicians.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "description": "Admin email address" },
+        "role": { "type": "string", "description": "Role e.g. super_admin or manager" },
+        "name": { "type": "string", "description": "Admin name" },
+        "createdAt": { "type": "string", "description": "Creation timestamp" }
+      },
+      "required": ["email", "role"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Gadget catalog products readable by public, manageable by admins."
+    },
+    "/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/Order" },
+      "description": "Customer orders creatable by customers and tracked by phone/ID; fully manageable by admin."
+    },
+    "/repairs/{repairId}": {
+      "schema": { "$ref": "#/entities/RepairJob" },
+      "description": "Gadget repair tickets created by customers, trackable by reference, managed by technicians/admins."
+    },
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminUser" },
+      "description": "Authorized administrators record."
+    }
+  }
+}

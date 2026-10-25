@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <rect width="200" height="200" rx="32" fill="#F0FDF4" />
+  <!-- Screen top lid -->
+  <rect x="42" y="45" width="116" height="78" rx="8" fill="#1E293B" />
+  <rect x="47" y="50" width="106" height="68" rx="4" fill="#0F172A" />
+  <circle cx="100" cy="80" r="12" fill="#10B981" />
+  <rect x="70" y="98" width="60" height="4" rx="2" fill="#334155" />
+  <!-- Base -->
+  <path d="M30 126 C30 123 33 123 36 123 H164 C167 123 170 123 170 126 L164 145 C164 148 161 148 158 148 H42 C39 148 36 148 36 145 Z" fill="#94A3B8" />
+  <rect x="85" y="125" width="30" height="4" rx="2" fill="#64748B" />
+</svg>

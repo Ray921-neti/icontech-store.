@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <rect width="200" height="200" rx="32" fill="#F0FDFA" />
+  <!-- Heavy duty power bank brick -->
+  <rect x="52" y="40" width="96" height="125" rx="14" fill="#0F172A" />
+  <rect x="58" y="46" width="84" height="113" rx="10" fill="#1E293B" />
+  <!-- LED percentage screen -->
+  <rect x="74" y="60" width="52" height="28" rx="6" fill="#022C22" />
+  <text x="100" y="78" font-family="monospace" font-size="14" font-weight="900" fill="#14B8A6" text-anchor="middle">100%</text>
+  <!-- Port outputs -->
+  <rect x="68" y="110" width="20" height="6" rx="2" fill="#64748B" />
+  <rect x="96" y="110" width="12" height="6" rx="2" fill="#0D9488" />
+  <rect x="114" y="110" width="20" height="6" rx="2" fill="#64748B" />
+  <text x="100" y="142" font-family="sans-serif" font-size="10" font-weight="700" fill="#94A3B8" text-anchor="middle">40,000 mAh</text>
+</svg>
