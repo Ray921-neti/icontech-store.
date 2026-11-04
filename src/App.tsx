@@ -14,7 +14,10 @@ import { RepairTrackingView } from './components/RepairTrackingView';
 import { OrderTrackingView } from './components/OrderTrackingView';
 import { ContactView } from './components/ContactView';
 import { AdminDashboard } from './components/AdminDashboard';
+import { CustomerAuthModal } from './components/CustomerAuthModal';
+import { CustomerAccountView } from './components/CustomerAccountView';
 import { Footer } from './components/Footer';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { fetchProducts } from './services/storeService';
 import { Product, ProductCategory, Order } from './types';
 import { CATEGORIES } from './data/categories';
@@ -36,7 +39,8 @@ import {
   TrendingUp,
   ShieldCheck,
   Zap,
-  Phone
+  Phone,
+  ChevronUp
 } from 'lucide-react';
 
 function Storefront() {
@@ -52,6 +56,10 @@ function Storefront() {
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [trackingRepairRef, setTrackingRepairRef] = useState<string>('');
+  const [customerAuthModal, setCustomerAuthModal] = useState<{ isOpen: boolean; mode: 'signin' | 'signup' }>({
+    isOpen: false,
+    mode: 'signin',
+  });
 
   // Catalog State
   const [products, setProducts] = useState<Product[]>([]);
@@ -76,6 +84,69 @@ function Storefront() {
     }
     loadCatalog();
   }, []);
+
+  // Floating Scroll to Top Visibility Listener
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  // Synchronize URL hash with activeTab and handle deep links
+  useEffect(() => {
+    const handleLocationRouting = () => {
+      const rawHash = window.location.hash.toLowerCase().replace('#', '');
+      const params = new URLSearchParams(window.location.search);
+
+      // 1. Direct tracking parameter deep-links
+      const trackParam = params.get('track') || params.get('repair');
+      if (trackParam) {
+        setTrackingRepairRef(trackParam);
+        setActiveTab('repair-track');
+        return;
+      }
+
+      // 2. Auth modal triggers
+      if (rawHash === 'login' || rawHash === 'signin' || rawHash === 'auth' || params.get('auth') === 'signin' || params.get('login') === 'true') {
+        setCustomerAuthModal({ isOpen: true, mode: 'signin' });
+      } else if (rawHash === 'signup' || rawHash === 'register' || params.get('auth') === 'signup') {
+        setCustomerAuthModal({ isOpen: true, mode: 'signup' });
+      } else if (rawHash === 'admin') {
+        setIsAdminOpen(true);
+      } else if (['home', 'shop', 'repair-book', 'repair-track', 'order-track', 'contact', 'account'].includes(rawHash)) {
+        setActiveTab(rawHash);
+      }
+    };
+
+    handleLocationRouting();
+    window.addEventListener('hashchange', handleLocationRouting);
+    return () => window.removeEventListener('hashchange', handleLocationRouting);
+  }, []);
+
+  // Update URL hash when tab changes so browser refresh and back/forward buttons work
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    if (window.location.hash.replace('#', '') !== tab) {
+      window.location.hash = `#${tab}`;
+    }
+  };
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // Show button after user scrolls past 300px
+      if (window.scrollY > 300) {
+        setShowScrollTop(true);
+      } else {
+        setShowScrollTop(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    });
+  };
 
   const handleAddToCart = (product: Product, quantity = 1) => {
     addToCart(product, quantity);
@@ -126,12 +197,13 @@ function Storefront() {
       {/* Navigation Bar */}
       <Navbar
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleTabChange}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         selectedCategory={selectedCategory}
         setSelectedCategory={setSelectedCategory}
         onOpenAdmin={() => setIsAdminOpen(true)}
+        onOpenCustomerAuth={(mode = 'signin') => setCustomerAuthModal({ isOpen: true, mode })}
       />
 
       {/* Main Content Area */}
@@ -368,7 +440,10 @@ function Storefront() {
 
         {/* VIEW 3: GADGET REPAIR BOOKING */}
         {activeTab === 'repair-book' && (
-          <RepairBookingView onTrackSubmittedRepair={handleTrackSubmittedRepair} />
+          <RepairBookingView
+            onTrackSubmittedRepair={handleTrackSubmittedRepair}
+            onRequireLogin={() => setCustomerAuthModal({ isOpen: true, mode: 'signin' })}
+          />
         )}
 
         {/* VIEW 4: GADGET REPAIR TRACKING */}
@@ -381,21 +456,70 @@ function Storefront() {
 
         {/* VIEW 6: CONTACT & STORE LOCATION */}
         {activeTab === 'contact' && <ContactView />}
+
+        {/* VIEW 7: CUSTOMER ACCOUNT DASHBOARD */}
+        {activeTab === 'account' && (
+          <CustomerAccountView
+            onNavigateTab={(tab) => {
+              setActiveTab(tab);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onTrackRepair={(refId) => {
+              setTrackingRepairRef(refId);
+              setActiveTab('repair-track');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onTrackOrder={(orderId) => {
+              setActiveTab('order-track');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onOpenLogin={() => setCustomerAuthModal({ isOpen: true, mode: 'signin' })}
+          />
+        )}
+
+        {/* VIEW 8: DEDICATED LOGIN / REGISTRATION VIEW */}
+        {activeTab === 'login' && (
+          <div className="py-2 sm:py-6 flex items-center justify-center">
+            <CustomerAuthModal
+              isOpen={true}
+              isEmbedded={true}
+              onClose={() => setActiveTab('home')}
+              onSuccess={() => setActiveTab('home')}
+            />
+          </div>
+        )}
       </div>
 
-      {/* Floating WhatsApp Quick Action Button */}
-      <a
-        href={createWhatsAppUrl('Hello ICONTECH, I am on your website and would like assistance with gadgets or repairs.')}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="fixed bottom-5 right-5 z-40 bg-emerald-600 hover:bg-emerald-700 text-white p-3.5 rounded-full shadow-2xl flex items-center justify-center transition hover:scale-105 group"
-        aria-label="WhatsApp Support"
-      >
-        <MessageCircle className="w-6 h-6 fill-current" />
-        <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs transition-all duration-300 ease-in-out text-xs font-bold group-hover:ml-2">
-          Chat with ICONTECH
-        </span>
-      </a>
+      {/* Floating Action Buttons (WhatsApp & Scroll to Top) */}
+      <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end space-y-2.5 pointer-events-none">
+        {/* Floating Scroll to Top Button */}
+        <button
+          onClick={scrollToTop}
+          className={`pointer-events-auto p-3 rounded-full bg-slate-900/90 hover:bg-orange-600 text-white shadow-2xl backdrop-blur-md border border-white/20 transition-all duration-300 transform flex items-center justify-center group ${
+            showScrollTop
+              ? 'opacity-100 translate-y-0 scale-100 cursor-pointer'
+              : 'opacity-0 translate-y-4 scale-75 pointer-events-none'
+          }`}
+          aria-label="Scroll to top"
+          title="Scroll to top"
+        >
+          <ChevronUp className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />
+        </button>
+
+        {/* Floating WhatsApp Quick Action Button */}
+        <a
+          href={createWhatsAppUrl('Hello ICONTECH, I am on your website and would like assistance with gadgets or repairs.')}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="pointer-events-auto bg-emerald-600 hover:bg-emerald-700 text-white p-3.5 rounded-full shadow-2xl flex items-center justify-center transition hover:scale-105 group"
+          aria-label="WhatsApp Support"
+        >
+          <MessageCircle className="w-6 h-6 fill-current" />
+          <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs transition-all duration-300 ease-in-out text-xs font-bold group-hover:ml-2">
+            Chat with ICONTECH
+          </span>
+        </a>
+      </div>
 
       {/* Footer */}
       <Footer
@@ -431,6 +555,14 @@ function Storefront() {
         onOrderSuccess={(order) => {
           // Success handled in modal
         }}
+        onOpenCustomerAuth={(mode) => setCustomerAuthModal({ isOpen: true, mode: mode || 'signin' })}
+      />
+
+      {/* Customer Authentication Modal (Sign In / Create Account) */}
+      <CustomerAuthModal
+        isOpen={customerAuthModal.isOpen}
+        initialMode={customerAuthModal.mode}
+        onClose={() => setCustomerAuthModal((prev) => ({ ...prev, isOpen: false }))}
       />
 
       {/* Admin Dashboard Workspace */}
@@ -443,10 +575,12 @@ function Storefront() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <CartProvider>
-        <Storefront />
-      </CartProvider>
-    </AuthProvider>
+    <ErrorBoundary fallbackTitle="ICONTECH Gadget Storefront">
+      <AuthProvider>
+        <CartProvider>
+          <Storefront />
+        </CartProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }

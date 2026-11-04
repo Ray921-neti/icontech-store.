@@ -2,7 +2,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Default deny all unknown paths
+    // Default deny all unknown collections and documents
     match /{document=**} {
       allow read, write: if false;
     }
@@ -16,60 +16,171 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isAdmin() {
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Primary administrator with absolute management authority
+    function isPrimaryAdmin() {
+      return isSignedIn() && 
+        request.auth.token.email == 'raydiamond108@gmail.com' &&
+        request.auth.token.email_verified == true;
+    }
+
+    // Operational staff or primary administrator
+    function isStaffAdmin() {
       return isSignedIn() && (
-        request.auth.token.email == 'raydiamond108@gmail.com' ||
+        isPrimaryAdmin() ||
         exists(/databases/$(database)/documents/admins/$(request.auth.uid))
       );
     }
 
-    // Products catalog: Publicly viewable, admin manageable
+    // 1. Products catalog: Publicly viewable, operational staff / admin manageable
     match /products/{productId} {
       allow read: if true;
-      allow write: if isAdmin() && isValidId(productId);
+      allow write: if isStaffAdmin() && isValidId(productId);
     }
 
-    // Customer orders
-    match /orders/{orderId} {
-      // Allow reading single order for verification or admin read/list
-      allow get: if isValidId(orderId);
-      allow list: if isAdmin();
+    // 2. Customer profiles: Readable and editable only by owner and authorized staff.
+    // Customers cannot alter immutable fields (createdAt, uid) or elevate privileges.
+    match /customers/{customerId} {
+      allow get: if isSignedIn() && (isOwner(customerId) || isStaffAdmin()) && isValidId(customerId);
+      allow list: if isStaffAdmin();
       
-      // Customer creation with strict initial state
-      allow create: if isValidId(orderId) &&
+      allow create: if isOwner(customerId) && isValidId(customerId) &&
+        request.resource.data.uid == customerId &&
+        request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 128 &&
+        request.resource.data.phone is string && request.resource.data.phone.size() >= 8 && request.resource.data.phone.size() <= 32 &&
+        request.resource.data.normalizedPhone is string &&
+        request.resource.data.createdAt is string &&
+        (!('email' in request.resource.data) || request.resource.data.email is string) &&
+        (!('defaultAddress' in request.resource.data) || request.resource.data.defaultAddress is string) &&
+        (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is string) &&
+        request.resource.data.keys().hasOnly([
+          'uid', 'name', 'phone', 'normalizedPhone', 'email', 'defaultAddress', 
+          'role', 'createdAt', 'updatedAt'
+        ]) &&
+        (!('role' in request.resource.data) || request.resource.data.role == 'customer') &&
+        (!('isAdmin' in request.resource.data) || request.resource.data.isAdmin == false);
+
+      allow update: if isValidId(customerId) && (
+        isStaffAdmin() || (
+          isOwner(customerId) &&
+          request.resource.data.uid == resource.data.uid &&
+          request.resource.data.createdAt == resource.data.createdAt &&
+          request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 128 &&
+          request.resource.data.phone is string && request.resource.data.phone.size() >= 8 && request.resource.data.phone.size() <= 32 &&
+          request.resource.data.normalizedPhone is string &&
+          (!('email' in request.resource.data) || request.resource.data.email is string) &&
+          (!('defaultAddress' in request.resource.data) || request.resource.data.defaultAddress is string) &&
+          (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is string) &&
+          request.resource.data.keys().hasOnly([
+            'uid', 'name', 'phone', 'normalizedPhone', 'email', 'defaultAddress', 
+            'role', 'createdAt', 'updatedAt'
+          ]) &&
+          (!('role' in request.resource.data) || request.resource.data.role == 'customer') &&
+          (!('isAdmin' in request.resource.data) || request.resource.data.isAdmin == false)
+        )
+      );
+
+      // Customer account deletion restricted to primary admin
+      allow delete: if isPrimaryAdmin() && isValidId(customerId);
+    }
+
+    // 3. Customer orders: Strictly authenticated & owner/staff accessible.
+    // Unauthenticated access and cross-customer reads are rejected.
+    match /orders/{orderId} {
+      allow get: if isSignedIn() && (isStaffAdmin() || resource.data.customerUid == request.auth.uid) && isValidId(orderId);
+      allow list: if isSignedIn() && (isStaffAdmin() || resource.data.customerUid == request.auth.uid);
+      
+      // Customer creation: must be authenticated, link to own UID, and have valid fields
+      allow create: if isSignedIn() &&
+        isValidId(orderId) &&
+        request.resource.data.id == orderId &&
+        request.resource.data.customerUid == request.auth.uid &&
+        request.resource.data.customerName is string && request.resource.data.customerName.size() > 0 && request.resource.data.customerName.size() <= 128 &&
+        request.resource.data.customerPhone is string && request.resource.data.customerPhone.size() >= 8 && request.resource.data.customerPhone.size() <= 32 &&
+        request.resource.data.deliveryMethod in ['delivery', 'pickup'] &&
+        request.resource.data.paymentMethod in ['cash_on_delivery', 'bank_transfer', 'cash_on_pickup'] &&
+        request.resource.data.items is list && request.resource.data.items.size() > 0 && request.resource.data.items.size() <= 50 &&
+        request.resource.data.subtotal is number && request.resource.data.subtotal > 0 &&
+        request.resource.data.deliveryFee is number && request.resource.data.deliveryFee >= 0 &&
+        request.resource.data.totalAmount is number && request.resource.data.totalAmount > 0 &&
         request.resource.data.orderStatus == 'pending' &&
-        (request.resource.data.paymentStatus == 'unpaid' || request.resource.data.paymentStatus == 'pending_verification') &&
-        request.resource.data.customerName is string &&
-        request.resource.data.customerPhone is string &&
-        request.resource.data.totalAmount is number;
+        request.resource.data.paymentStatus in ['unpaid', 'pending_verification'] &&
+        request.resource.data.createdAt is string &&
+        (!('customerEmail' in request.resource.data) || request.resource.data.customerEmail is string) &&
+        (!('deliveryAddress' in request.resource.data) || request.resource.data.deliveryAddress is string) &&
+        (!('notes' in request.resource.data) || request.resource.data.notes is string) &&
+        (!('paymentReference' in request.resource.data) || request.resource.data.paymentReference is string) &&
+        (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is string) &&
+        request.resource.data.keys().hasOnly([
+          'id', 'customerUid', 'customerName', 'customerPhone', 'customerEmail', 
+          'deliveryMethod', 'deliveryAddress', 'items', 'subtotal', 'deliveryFee', 
+          'totalAmount', 'paymentMethod', 'paymentStatus', 'paymentReference', 
+          'orderStatus', 'notes', 'createdAt', 'updatedAt'
+        ]);
 
-      // Only admin can update or delete orders
-      allow update, delete: if isAdmin() && isValidId(orderId);
+      // Staff and admin can update order status and verify payment
+      allow update: if isStaffAdmin() && isValidId(orderId);
+
+      // Financial record deletion restricted to primary admin
+      allow delete: if isPrimaryAdmin() && isValidId(orderId);
     }
 
-    // Gadget repairs
+    // 4. Gadget repairs: Strictly authenticated & owner/staff accessible.
+    // Unauthenticated reads and cross-customer reads are rejected.
     match /repairs/{repairId} {
-      // Customers can look up their repair ticket with reference ID; admins can list
-      allow get: if isValidId(repairId);
-      allow list: if isAdmin();
+      allow get: if isSignedIn() && (isStaffAdmin() || resource.data.customerUid == request.auth.uid) && isValidId(repairId);
+      allow list: if isSignedIn() && (isStaffAdmin() || resource.data.customerUid == request.auth.uid);
 
-      // Customer can create repair request starting in 'Received'
-      allow create: if isValidId(repairId) &&
+      // Customer creation: must be authenticated and link repair to own auth UID
+      allow create: if isSignedIn() &&
+        isValidId(repairId) &&
+        request.resource.data.id == repairId &&
+        request.resource.data.customerUid == request.auth.uid &&
+        request.resource.data.customerName is string && request.resource.data.customerName.size() > 0 && request.resource.data.customerName.size() <= 128 &&
+        request.resource.data.customerPhone is string && request.resource.data.customerPhone.size() >= 8 && request.resource.data.customerPhone.size() <= 32 &&
+        request.resource.data.gadgetType is string && request.resource.data.gadgetType.size() > 0 && request.resource.data.gadgetType.size() <= 64 &&
+        request.resource.data.brandModel is string && request.resource.data.brandModel.size() > 0 && request.resource.data.brandModel.size() <= 128 &&
+        request.resource.data.faultCategory is string && request.resource.data.faultCategory.size() > 0 && request.resource.data.faultCategory.size() <= 128 &&
+        request.resource.data.faultDescription is string && request.resource.data.faultDescription.size() > 0 && request.resource.data.faultDescription.size() <= 1000 &&
         request.resource.data.repairStatus == 'Received' &&
-        request.resource.data.customerName is string &&
-        request.resource.data.customerPhone is string &&
-        request.resource.data.gadgetType is string &&
-        request.resource.data.brandModel is string &&
-        request.resource.data.faultDescription is string;
+        (!('paymentStatus' in request.resource.data) || request.resource.data.paymentStatus == 'unpaid') &&
+        (!('quotedPrice' in request.resource.data) || request.resource.data.quotedPrice == 0) &&
+        (!('diagnosticNotes' in request.resource.data) || request.resource.data.diagnosticNotes == '') &&
+        (!('customerEmail' in request.resource.data) || request.resource.data.customerEmail is string) &&
+        (!('passcodeProvided' in request.resource.data) || request.resource.data.passcodeProvided is string) &&
+        (!('photoUrl' in request.resource.data) || request.resource.data.photoUrl is string) &&
+        (!('estimatedCompletion' in request.resource.data) || request.resource.data.estimatedCompletion is string) &&
+        request.resource.data.createdAt is string &&
+        (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is string) &&
+        request.resource.data.keys().hasOnly([
+          'id', 'customerUid', 'customerName', 'customerPhone', 'customerEmail', 
+          'gadgetType', 'brandModel', 'faultCategory', 'faultDescription', 
+          'photoUrl', 'passcodeProvided', 'repairStatus', 'quotedPrice', 
+          'diagnosticNotes', 'estimatedCompletion', 'paymentStatus', 
+          'createdAt', 'updatedAt'
+        ]);
 
-      // Only admin/technicians can update status, quote prices, diagnose, or delete
-      allow update, delete: if isAdmin() && isValidId(repairId);
+      // Technicians and staff can diagnose, update status, and quote prices
+      allow update: if isStaffAdmin() && isValidId(repairId);
+
+      // Deletion restricted to primary admin
+      allow delete: if isPrimaryAdmin() && isValidId(repairId);
     }
 
-    // Admins registry
+    // 5. Admins registry: only primary administrator can manage authorized identities
     match /admins/{adminId} {
-      allow read: if isAdmin() && isValidId(adminId);
-      allow write: if isSignedIn() && request.auth.token.email == 'raydiamond108@gmail.com' && isValidId(adminId);
+      allow read: if isStaffAdmin() && isValidId(adminId);
+      allow create, update, delete: if isPrimaryAdmin() && 
+        isValidId(adminId) &&
+        (request.method == 'delete' || (
+          request.resource.data.keys().hasOnly(['uid', 'email', 'name', 'role', 'createdAt', 'updatedAt']) &&
+          request.resource.data.uid == adminId &&
+          request.resource.data.email is string &&
+          request.resource.data.role in ['super_admin', 'technician', 'sales_manager']
+        ));
     }
   }
 }

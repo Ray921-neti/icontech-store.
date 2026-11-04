@@ -31,6 +31,7 @@
       "type": "object",
       "properties": {
         "id": { "type": "string", "description": "Order reference code e.g. ICON-ORD-XXXXX" },
+        "customerUid": { "type": "string", "description": "Customer Firebase Auth UID if authenticated" },
         "customerName": { "type": "string", "description": "Customer full name", "maxLength": 120 },
         "customerPhone": { "type": "string", "description": "Active phone or WhatsApp number", "maxLength": 30 },
         "customerEmail": { "type": "string", "description": "Customer email if provided", "maxLength": 120 },
@@ -56,6 +57,7 @@
       "type": "object",
       "properties": {
         "id": { "type": "string", "description": "Repair reference code e.g. ICON-REP-XXXXX" },
+        "customerUid": { "type": "string", "description": "Customer Firebase Auth UID if authenticated" },
         "customerName": { "type": "string", "description": "Customer full name", "maxLength": 120 },
         "customerPhone": { "type": "string", "description": "Customer phone number", "maxLength": 30 },
         "customerEmail": { "type": "string", "description": "Customer email", "maxLength": 120 },
@@ -78,6 +80,22 @@
         "updatedAt": { "type": "string", "description": "Update timestamp" }
       },
       "required": ["customerName", "customerPhone", "gadgetType", "brandModel", "faultDescription", "repairStatus"]
+    },
+    "CustomerProfile": {
+      "title": "CustomerProfile",
+      "description": "Customer profile containing verified Nigerian phone number and personal details.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth User ID" },
+        "name": { "type": "string", "description": "Customer full name", "maxLength": 120 },
+        "phone": { "type": "string", "description": "Phone number e.g. 07039420600", "maxLength": 30 },
+        "normalizedPhone": { "type": "string", "description": "Normalized Nigerian digits e.g. 2347039420600", "maxLength": 30 },
+        "email": { "type": "string", "description": "Optional email address", "maxLength": 120 },
+        "defaultAddress": { "type": "string", "description": "Default delivery address in Ondo", "maxLength": 300 },
+        "createdAt": { "type": "string", "description": "Account registration date" },
+        "updatedAt": { "type": "string", "description": "Last profile update timestamp" }
+      },
+      "required": ["uid", "name", "phone", "normalizedPhone", "createdAt"]
     },
     "AdminUser": {
       "title": "AdminUser",
@@ -104,6 +122,10 @@
     "/repairs/{repairId}": {
       "schema": { "$ref": "#/entities/RepairJob" },
       "description": "Gadget repair tickets created by customers, trackable by reference, managed by technicians/admins."
+    },
+    "/customers/{customerId}": {
+      "schema": { "$ref": "#/entities/CustomerProfile" },
+      "description": "Customer profile records accessible by the authenticated customer owner or admin."
     },
     "/admins/{adminId}": {
       "schema": { "$ref": "#/entities/AdminUser" },

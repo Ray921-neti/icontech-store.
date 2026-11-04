@@ -1,13 +1,33 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
+import { initializeFirestore, doc, getDocFromServer, setLogLevel } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 
-// Initialize Firebase App
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+// Silence non-fatal Firestore network state warnings
+setLogLevel('silent');
 
-// Database with explicit firestoreDatabaseId
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+// Support both environment variables (for GitHub deployments/clones) and local applet config
+const resolvedConfig = {
+  apiKey: import.meta.env?.VITE_FIREBASE_API_KEY || firebaseConfig.apiKey,
+  authDomain: import.meta.env?.VITE_FIREBASE_AUTH_DOMAIN || firebaseConfig.authDomain,
+  projectId: import.meta.env?.VITE_FIREBASE_PROJECT_ID || firebaseConfig.projectId,
+  storageBucket: import.meta.env?.VITE_FIREBASE_STORAGE_BUCKET || firebaseConfig.storageBucket,
+  messagingSenderId: import.meta.env?.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseConfig.messagingSenderId,
+  appId: import.meta.env?.VITE_FIREBASE_APP_ID || firebaseConfig.appId,
+  firestoreDatabaseId: import.meta.env?.VITE_FIREBASE_DATABASE_ID || firebaseConfig.firestoreDatabaseId || '(default)',
+};
+
+// Initialize Firebase App
+const app = !getApps().length ? initializeApp(resolvedConfig) : getApp();
+
+// Force standard HTTP long-polling with shorter timeout to prevent 10-second hanging streams
+// in proxied, cloud, or iframe preview environments
+export const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+  experimentalLongPollingOptions: {
+    timeoutSeconds: 6,
+  },
+}, resolvedConfig.firestoreDatabaseId);
 
 // Auth instance
 export const auth = getAuth(app);
@@ -61,22 +81,24 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   throw new Error(JSON.stringify(errInfo));
 }
 
-// Startup connection verification test as required by skill guidelines
+// Connection verification helper for diagnostics when explicitly invoked
 export async function testConnection(): Promise<boolean> {
   try {
-    await getDocFromServer(doc(db, 'test', 'connection'));
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('client starting up or offline')), 3000)
+    );
+    await Promise.race([
+      getDocFromServer(doc(db, 'products', 'test_ping')),
+      timeoutPromise
+    ]);
     return true;
   } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.warn('Firebase client is offline or starting up.');
+    if (error instanceof Error && (error.message.includes('offline') || error.message.includes('starting up'))) {
       return false;
     }
-    // Normal response if doc doesn't exist but server reached
+    // Expected response if doc doesn't exist but server reached
     return true;
   }
 }
-
-// Trigger initial test
-testConnection().catch(() => {});
 
 export default app;

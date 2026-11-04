@@ -8,7 +8,8 @@ import {
   ShieldCheck, 
   Clock, 
   MessageCircle, 
-  Heart 
+  Heart,
+  User 
 } from 'lucide-react';
 import { STORE_NAME, STORE_LOCATION, STORE_PHONE, createWhatsAppUrl } from '../utils/formatters';
 import { ProductCategory } from '../types';
@@ -185,6 +186,15 @@ export const Footer: React.FC<FooterProps> = ({
               >
                 <Package className="w-3.5 h-3.5 mr-1 text-emerald-400" />
                 Track Order Delivery
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => onNavigate('account')}
+                className="hover:text-orange-400 transition flex items-center"
+              >
+                <User className="w-3.5 h-3.5 mr-1 text-orange-400" />
+                Customer Account &amp; Orders
               </button>
             </li>
             <li>

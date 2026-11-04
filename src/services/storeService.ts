@@ -7,16 +7,18 @@ import {
   updateDoc, 
   deleteDoc, 
   query, 
+  where,
   orderBy,
   serverTimestamp 
 } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from '../lib/firebase';
-import { Product, Order, RepairJob, OrderStatus, PaymentStatus } from '../types';
+import { db, auth, handleFirestoreError, OperationType } from '../lib/firebase';
+import { Product, Order, RepairJob, OrderStatus, PaymentStatus, CustomerProfile } from '../types';
 import { INITIAL_PRODUCTS, INITIAL_REPAIRS } from '../data/seedData';
 
 const PRODUCTS_COLLECTION = 'products';
 const ORDERS_COLLECTION = 'orders';
 const REPAIRS_COLLECTION = 'repairs';
+const CUSTOMERS_COLLECTION = 'customers';
 
 // In-memory fallback if Firestore network is temporarily unreachable
 let localProductsFallback: Product[] = [...INITIAL_PRODUCTS];
@@ -128,9 +130,15 @@ export function generateOrderNumber(): string {
 export async function createOrder(
   orderData: Omit<Order, 'id' | 'createdAt' | 'orderStatus'> & { orderStatus?: OrderStatus }
 ): Promise<Order> {
+  const effectiveUid = orderData.customerUid || auth.currentUser?.uid;
+  if (!effectiveUid) {
+    throw new Error('Authentication Required: Please sign in with your ICONTECH customer account before submitting your order.');
+  }
+
   const orderId = generateOrderNumber();
   const newOrder: Order = {
     ...orderData,
+    customerUid: effectiveUid,
     id: orderId,
     orderStatus: 'pending',
     paymentStatus: orderData.paymentStatus || 'unpaid',
@@ -144,10 +152,8 @@ export async function createOrder(
     localOrdersFallback.unshift(newOrder);
     return newOrder;
   } catch (error) {
-    // If offline or permission issue, fallback gracefully for client confirmation
-    console.warn('Saving order to local backup:', error);
-    localOrdersFallback.unshift(newOrder);
-    return newOrder;
+    console.error('Order creation error:', error);
+    throw error;
   }
 }
 
@@ -226,9 +232,15 @@ export function generateRepairReference(): string {
 export async function createRepairJob(
   jobData: Omit<RepairJob, 'id' | 'createdAt' | 'repairStatus'>
 ): Promise<RepairJob> {
+  const effectiveUid = jobData.customerUid || auth.currentUser?.uid;
+  if (!effectiveUid) {
+    throw new Error('Authentication Required: Please sign in with your ICONTECH customer account before booking a repair.');
+  }
+
   const repairId = generateRepairReference();
   const newRepair: RepairJob = {
     ...jobData,
+    customerUid: effectiveUid,
     id: repairId,
     repairStatus: 'Received',
     paymentStatus: 'unpaid',
@@ -242,9 +254,8 @@ export async function createRepairJob(
     localRepairsFallback.unshift(newRepair);
     return newRepair;
   } catch (error) {
-    console.warn('Saving repair to local backup:', error);
-    localRepairsFallback.unshift(newRepair);
-    return newRepair;
+    console.error('Repair creation error:', error);
+    throw error;
   }
 }
 
@@ -314,3 +325,133 @@ export async function deleteRepairJob(repairId: string): Promise<void> {
   }
   localRepairsFallback = localRepairsFallback.filter(r => r.id !== repairId);
 }
+
+// ================= CUSTOMER PROFILE SERVICES ================= //
+
+const localCustomersFallback = new Map<string, CustomerProfile>();
+
+export async function fetchCustomerProfile(uid: string): Promise<CustomerProfile | null> {
+  try {
+    const docRef = doc(db, CUSTOMERS_COLLECTION, uid);
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+      return snap.data() as CustomerProfile;
+    }
+    return localCustomersFallback.get(uid) || null;
+  } catch (error) {
+    console.warn('Customer profile fetch fallback:', error);
+    return localCustomersFallback.get(uid) || null;
+  }
+}
+
+export async function saveCustomerProfile(profile: CustomerProfile): Promise<void> {
+  const sanitizedProfile: CustomerProfile = {
+    ...profile,
+    role: 'customer',
+  };
+  // Prevent customer from injecting admin flags
+  delete (sanitizedProfile as unknown as Record<string, unknown>).isAdmin;
+
+  try {
+    const docRef = doc(db, CUSTOMERS_COLLECTION, sanitizedProfile.uid);
+    await setDoc(docRef, sanitizedProfile);
+    localCustomersFallback.set(sanitizedProfile.uid, sanitizedProfile);
+  } catch (error) {
+    console.warn('Customer profile save fallback:', error);
+    localCustomersFallback.set(sanitizedProfile.uid, sanitizedProfile);
+  }
+}
+
+export async function updateCustomerProfile(uid: string, updates: Partial<CustomerProfile>): Promise<void> {
+  const safeUpdates = { ...updates };
+  // Strictly prevent mutating UID, role, or administrative fields
+  delete (safeUpdates as unknown as Record<string, unknown>).role;
+  delete (safeUpdates as unknown as Record<string, unknown>).isAdmin;
+  delete (safeUpdates as unknown as Record<string, unknown>).uid;
+
+  const dataToUpdate = {
+    ...safeUpdates,
+    updatedAt: new Date().toISOString(),
+  };
+
+  try {
+    const docRef = doc(db, CUSTOMERS_COLLECTION, uid);
+    await updateDoc(docRef, dataToUpdate);
+  } catch (error) {
+    console.warn('Customer profile update fallback:', error);
+  }
+
+  const existing = localCustomersFallback.get(uid);
+  if (existing) {
+    localCustomersFallback.set(uid, { ...existing, ...dataToUpdate });
+  }
+}
+
+export async function fetchCustomerOrders(customerUid: string, phone?: string): Promise<Order[]> {
+  try {
+    const q = query(
+      collection(db, ORDERS_COLLECTION),
+      where('customerUid', '==', customerUid)
+    );
+    const snapshot = await getDocs(q);
+    const orders: Order[] = [];
+    snapshot.forEach((docSnap) => {
+      orders.push({ id: docSnap.id, ...docSnap.data() } as Order);
+    });
+
+    // Merge any locally placed orders with matching customerUid from fallback cache
+    for (const localOrd of localOrdersFallback) {
+      if (localOrd.customerUid === customerUid && !orders.some(o => o.id === localOrd.id)) {
+        orders.push(localOrd);
+      }
+    }
+
+    return orders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  } catch (error) {
+    console.warn('Customer orders Firestore query error, checking local session cache:', error);
+    const cleanPhone = phone ? phone.replace(/\D/g, '') : '';
+    return localOrdersFallback.filter(o => {
+      if (o.customerUid && o.customerUid === customerUid) return true;
+      if (cleanPhone && o.customerPhone) {
+        const orderPhone = o.customerPhone.replace(/\D/g, '');
+        return orderPhone.includes(cleanPhone) || cleanPhone.includes(orderPhone);
+      }
+      return false;
+    });
+  }
+}
+
+export async function fetchCustomerRepairs(customerUid: string, phone?: string): Promise<RepairJob[]> {
+  try {
+    const q = query(
+      collection(db, REPAIRS_COLLECTION),
+      where('customerUid', '==', customerUid)
+    );
+    const snapshot = await getDocs(q);
+    const repairs: RepairJob[] = [];
+    snapshot.forEach((docSnap) => {
+      repairs.push({ id: docSnap.id, ...docSnap.data() } as RepairJob);
+    });
+
+    // Merge any locally placed repairs with matching customerUid from fallback cache
+    for (const localRep of localRepairsFallback) {
+      if (localRep.customerUid === customerUid && !repairs.some(r => r.id === localRep.id)) {
+        repairs.push(localRep);
+      }
+    }
+
+    return repairs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  } catch (error) {
+    console.warn('Customer repairs Firestore query error, checking local session cache:', error);
+    const cleanPhone = phone ? phone.replace(/\D/g, '') : '';
+    return localRepairsFallback.filter(r => {
+      if (r.customerUid && r.customerUid === customerUid) return true;
+      if (cleanPhone && r.customerPhone) {
+        const repPhone = r.customerPhone.replace(/\D/g, '');
+        return repPhone.includes(cleanPhone) || cleanPhone.includes(repPhone);
+      }
+      return false;
+    });
+  }
+}
+

@@ -12,6 +12,7 @@ import {
   Banknote
 } from 'lucide-react';
 import { getOrderById } from '../services/storeService';
+import { useAuth } from '../context/AuthContext';
 import { Order, OrderStatus } from '../types';
 import { 
   formatNaira, 
@@ -22,6 +23,7 @@ import {
 } from '../utils/formatters';
 
 export const OrderTrackingView: React.FC = () => {
+  const { user, isAdmin } = useAuth();
   const [orderIdInput, setOrderIdInput] = useState('');
   const [phoneInput, setPhoneInput] = useState('');
   const [order, setOrder] = useState<Order | null>(null);
@@ -39,6 +41,11 @@ export const OrderTrackingView: React.FC = () => {
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) {
+      setError('Authentication Required: Please sign in to your ICONTECH customer account to view your order tracking details.');
+      return;
+    }
+
     const cleanId = orderIdInput.trim().toUpperCase();
     if (!cleanId) {
       setError('Please enter your order reference (e.g. ICON-ORD-74921).');
@@ -56,6 +63,13 @@ export const OrderTrackingView: React.FC = () => {
         return;
       }
 
+      // Strict ownership check: Only the customer who placed the order or admin can view
+      if (!isAdmin && found.customerUid && found.customerUid !== user.uid) {
+        setError('Access Restricted: You do not have permission to view this order. Please sign in with the account used to make the purchase.');
+        setOrder(null);
+        return;
+      }
+
       if (phoneInput.trim()) {
         const p1 = phoneInput.replace(/[^0-9]/g, '');
         const p2 = found.customerPhone.replace(/[^0-9]/g, '');
@@ -69,7 +83,7 @@ export const OrderTrackingView: React.FC = () => {
       setOrder(found);
     } catch (e) {
       console.error('Order tracking error:', e);
-      setError('Failed to fetch order. Please check your internet connection.');
+      setError('Failed to fetch order or access denied by security rules.');
     } finally {
       setIsLoading(false);
     }

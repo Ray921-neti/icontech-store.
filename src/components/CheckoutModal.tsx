@@ -15,6 +15,7 @@ import {
   Printer
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { createOrder } from '../services/storeService';
 import { Order, PaymentMethod } from '../types';
 import { 
@@ -29,14 +30,17 @@ interface CheckoutModalProps {
   isOpen: boolean;
   onClose: () => void;
   onOrderSuccess: (order: Order) => void;
+  onOpenCustomerAuth?: (mode?: 'signin' | 'signup') => void;
 }
 
 export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   isOpen,
   onClose,
   onOrderSuccess,
+  onOpenCustomerAuth,
 }) => {
   const { items, subtotal, deliveryFee, totalAmount, clearCart } = useCart();
+  const { customerProfile } = useAuth();
 
   const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery');
   const [customerName, setCustomerName] = useState('');
@@ -45,6 +49,16 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('bank_transfer');
   const [orderNotes, setOrderNotes] = useState('');
+
+  // Auto-fill from signed-in customer profile
+  React.useEffect(() => {
+    if (customerProfile && isOpen) {
+      if (!customerName) setCustomerName(customerProfile.name);
+      if (!customerPhone) setCustomerPhone(customerProfile.phone);
+      if (!customerEmail && customerProfile.email) setCustomerEmail(customerProfile.email);
+      if (!deliveryAddress && customerProfile.defaultAddress) setDeliveryAddress(customerProfile.defaultAddress);
+    }
+  }, [customerProfile, isOpen]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,6 +82,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setError(null);
 
     // Validation
+    if (!customerProfile) {
+      setError('Please sign in or create an account to place an order. All orders are linked to your secure customer account.');
+      return;
+    }
     if (!customerName.trim()) {
       setError('Please provide your full name.');
       return;
@@ -89,6 +107,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
     try {
       const orderPayload = {
+        customerUid: customerProfile?.uid,
         customerName: customerName.trim(),
         customerPhone: customerPhone.trim(),
         customerEmail: customerEmail.trim() || undefined,
@@ -280,6 +299,34 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs flex items-center">
                 <ShieldAlert className="w-4 h-4 mr-2 shrink-0 text-red-600" />
                 <span>{error}</span>
+              </div>
+            )}
+
+            {!customerProfile && (
+              <div className="p-3.5 bg-orange-50 border border-orange-200 rounded-xl text-xs space-y-2">
+                <div className="flex items-center text-orange-950 font-bold">
+                  <ShieldAlert className="w-4 h-4 mr-2 text-orange-600 shrink-0" />
+                  <span>Customer Account Required for Checkout</span>
+                </div>
+                <p className="text-orange-900 text-[11px] leading-relaxed">
+                  In compliance with security rules, your order must be securely attached to your authenticated phone account.
+                </p>
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => onOpenCustomerAuth?.('signin')}
+                    className="px-3.5 py-1.5 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-lg text-xs transition"
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onOpenCustomerAuth?.('signup')}
+                    className="px-3.5 py-1.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-800 font-bold rounded-lg text-xs transition"
+                  >
+                    Create Account
+                  </button>
+                </div>
               </div>
             )}
 

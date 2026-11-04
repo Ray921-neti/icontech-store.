@@ -11,7 +11,9 @@ import {
   X,
   Sparkles,
   User,
-  MessageCircle
+  MessageCircle,
+  LogOut,
+  UserCheck
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -26,6 +28,7 @@ interface NavbarProps {
   selectedCategory: ProductCategory | 'all';
   setSelectedCategory: (cat: ProductCategory | 'all') => void;
   onOpenAdmin: () => void;
+  onOpenCustomerAuth: (mode?: 'signin' | 'signup') => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -36,9 +39,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   selectedCategory,
   setSelectedCategory,
   onOpenAdmin,
+  onOpenCustomerAuth,
 }) => {
   const { totalItems, setIsCartOpen } = useCart();
-  const { isAdmin, user } = useAuth();
+  const { isAdmin, customerProfile, customerSignOut, isCustomer } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -48,9 +52,18 @@ export const Navbar: React.FC<NavbarProps> = ({
     }
   };
 
+  const handleSignOut = async () => {
+    await customerSignOut();
+    setActiveTab('home');
+  };
+
+  const customerFirstName = customerProfile?.name
+    ? customerProfile.name.split(' ')[0]
+    : 'Customer';
+
   return (
     <header className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-xs">
-      {/* Top Notification / Contact Bar (Jumia/Temu style) */}
+      {/* Top Notification / Contact & Customer Bar (Jumia/Temu style) */}
       <div className="bg-slate-900 text-white text-xs py-1.5 px-4">
         <div className="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-2">
           <div className="flex items-center space-x-4">
@@ -64,29 +77,72 @@ export const Navbar: React.FC<NavbarProps> = ({
             </span>
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3 sm:space-x-4">
             <a 
               href={`tel:${STORE_PHONE}`} 
               className="flex items-center hover:text-amber-400 transition"
             >
               <Phone className="w-3.5 h-3.5 mr-1 text-emerald-400" />
-              <span>Call: {STORE_PHONE}</span>
+              <span className="hidden sm:inline">Call: </span>{STORE_PHONE}
             </a>
+
             <a
               href={createWhatsAppUrl('Hello ICONTECH, I would like to inquire about a gadget or repair service.')}
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden sm:flex items-center text-emerald-400 hover:text-emerald-300 transition font-medium"
+              className="hidden md:flex items-center text-emerald-400 hover:text-emerald-300 transition font-medium"
             >
               <MessageCircle className="w-3.5 h-3.5 mr-1" />
-              WhatsApp Us
+              WhatsApp
             </a>
+
+            {/* Desktop Customer Authentication in Top Bar */}
+            <div className="hidden sm:flex items-center space-x-2 pl-2 border-l border-slate-700">
+              {isCustomer && customerProfile ? (
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setActiveTab('account')}
+                    className="flex items-center text-xs font-bold text-orange-400 hover:text-orange-300 transition"
+                  >
+                    <User className="w-3.5 h-3.5 mr-1" />
+                    <span>Hi, {customerFirstName}</span>
+                  </button>
+                  <span className="text-gray-500">&bull;</span>
+                  <button
+                    onClick={handleSignOut}
+                    className="text-gray-400 hover:text-white transition flex items-center"
+                    title="Sign Out"
+                  >
+                    <LogOut className="w-3 h-3 mr-1" />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => onOpenCustomerAuth('signin')}
+                    className="text-gray-200 hover:text-orange-400 transition font-medium"
+                  >
+                    Sign In
+                  </button>
+                  <span className="text-gray-500">/</span>
+                  <button
+                    onClick={() => onOpenCustomerAuth('signup')}
+                    className="text-orange-400 hover:text-orange-300 transition font-bold"
+                  >
+                    Create Account
+                  </button>
+                </div>
+              )}
+            </div>
+
             <button
               onClick={onOpenAdmin}
-              className="flex items-center text-xs bg-slate-800 hover:bg-slate-700 text-gray-200 px-2 py-0.5 rounded transition"
+              className="flex items-center text-xs bg-slate-800 hover:bg-slate-700 text-gray-300 px-2 py-0.5 rounded transition"
+              title="Staff Portal"
             >
               <ShieldCheck className="w-3.5 h-3.5 mr-1 text-amber-400" />
-              {isAdmin ? 'Admin Dashboard' : 'Admin Login'}
+              {isAdmin ? 'Admin' : 'Staff'}
             </button>
           </div>
         </div>
@@ -139,7 +195,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </form>
 
           {/* Action Links & Cart */}
-          <div className="flex items-center space-x-2 sm:space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-3">
             {/* Repair Booking CTA */}
             <button
               onClick={() => setActiveTab('repair-book')}
@@ -153,6 +209,31 @@ export const Navbar: React.FC<NavbarProps> = ({
               Book Repair
             </button>
 
+            {/* Customer Account Button */}
+            {isCustomer && customerProfile ? (
+              <button
+                onClick={() => setActiveTab('account')}
+                className={`hidden sm:flex items-center px-3 py-1.5 rounded-xl text-xs font-bold transition border ${
+                  activeTab === 'account'
+                    ? 'border-orange-600 bg-orange-50 text-orange-700'
+                    : 'border-gray-200 text-gray-800 hover:border-orange-400 hover:bg-gray-50'
+                }`}
+              >
+                <div className="w-5 h-5 rounded-full bg-orange-600 text-white flex items-center justify-center text-[10px] mr-1.5 font-black">
+                  {customerFirstName.charAt(0).toUpperCase()}
+                </div>
+                <span>My Account</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => onOpenCustomerAuth('signin')}
+                className="hidden sm:flex items-center px-3 py-1.5 rounded-xl text-xs font-bold text-gray-800 hover:text-orange-600 hover:bg-orange-50 border border-gray-200 transition"
+              >
+                <User className="w-4 h-4 mr-1.5 text-gray-500" />
+                <span>Sign In</span>
+              </button>
+            )}
+
             {/* Track Repair */}
             <button
               onClick={() => setActiveTab('repair-track')}
@@ -163,7 +244,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               <Wrench className="w-4 h-4 mr-1 text-slate-500" />
-              <span className="hidden sm:inline">Track</span> Repair
+              <span className="hidden md:inline">Track</span> Repair
             </button>
 
             {/* Track Order */}
@@ -176,7 +257,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               <Package className="w-4 h-4 mr-1 text-slate-500" />
-              <span className="hidden sm:inline">Track</span> Order
+              <span className="hidden md:inline">Track</span> Order
             </button>
 
             {/* Cart Trigger Button */}
@@ -289,12 +370,68 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             Contact &amp; Store Location
           </button>
+
+          {isCustomer && (
+            <button
+              onClick={() => setActiveTab('account')}
+              className={`px-3 py-1.5 rounded-md transition font-bold text-orange-600 ${
+                activeTab === 'account' ? 'bg-orange-600 text-white' : 'hover:bg-orange-50'
+              }`}
+            >
+              👤 My Account
+            </button>
+          )}
         </nav>
       </div>
 
       {/* Mobile Menu Dropdown */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-gray-200 bg-white px-4 py-3 space-y-2">
+        <div className="md:hidden border-t border-gray-200 bg-white px-4 py-3 space-y-3">
+          {/* Customer Auth Profile Bar in Mobile Menu */}
+          {isCustomer && customerProfile ? (
+            <div className="p-3 bg-orange-50 border border-orange-200 rounded-2xl flex items-center justify-between">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-8 h-8 rounded-full bg-orange-600 text-white flex items-center justify-center font-bold text-xs">
+                  {customerFirstName.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <span className="font-bold text-gray-900 text-xs block">{customerProfile.name}</span>
+                  <span className="text-[10px] text-gray-500">{customerProfile.phone}</span>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  handleSignOut();
+                  setMobileMenuOpen(false);
+                }}
+                className="text-xs text-red-600 font-bold px-2 py-1 rounded bg-white border border-red-200 hover:bg-red-50"
+              >
+                Sign Out
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => {
+                  onOpenCustomerAuth('signin');
+                  setMobileMenuOpen(false);
+                }}
+                className="py-2 px-3 rounded-xl bg-gray-100 text-gray-800 font-bold text-xs text-center hover:bg-gray-200"
+              >
+                Customer Sign In
+              </button>
+              <button
+                onClick={() => {
+                  onOpenCustomerAuth('signup');
+                  setMobileMenuOpen(false);
+                }}
+                className="py-2 px-3 rounded-xl bg-orange-600 text-white font-bold text-xs text-center hover:bg-orange-700"
+              >
+                Create Account
+              </button>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-2 text-sm font-medium">
             <button
               onClick={() => { setActiveTab('home'); setMobileMenuOpen(false); }}
@@ -308,6 +445,14 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               🛍️ All Products
             </button>
+            {isCustomer && (
+              <button
+                onClick={() => { setActiveTab('account'); setMobileMenuOpen(false); }}
+                className={`p-2 rounded-lg text-left col-span-2 ${activeTab === 'account' ? 'bg-orange-600 text-white font-bold' : 'bg-orange-50 text-orange-700 font-bold'}`}
+              >
+                👤 My Account (Orders &amp; Repairs)
+              </button>
+            )}
             <button
               onClick={() => { setActiveTab('repair-book'); setMobileMenuOpen(false); }}
               className="p-2 rounded-lg text-left bg-orange-600 text-white font-bold col-span-2 flex items-center justify-center"
@@ -333,13 +478,14 @@ export const Navbar: React.FC<NavbarProps> = ({
               📍 Contact: Opposite Adeyemi, Ondo
             </button>
           </div>
+
           <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-xs text-gray-600">
             <span>Customer Line: <strong>{STORE_PHONE}</strong></span>
             <button 
               onClick={() => { onOpenAdmin(); setMobileMenuOpen(false); }}
               className="text-orange-600 font-bold hover:underline"
             >
-              Admin Portal
+              Staff / Admin Portal
             </button>
           </div>
         </div>

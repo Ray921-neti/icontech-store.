@@ -43,16 +43,16 @@ import {
 import { Product, Order, RepairJob, OrderStatus, PaymentStatus, RepairStatus, ProductCategory } from '../types';
 import { formatNaira, formatDate, createWhatsAppUrl, STORE_LOCATION } from '../utils/formatters';
 import { CATEGORIES } from '../data/categories';
+import { processAndCompressImage } from '../utils/imageUtils';
 
 interface AdminDashboardProps {
   onClose: () => void;
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
-  const { user, isAdmin, isLoading: authLoading, signInWithGoogle, loginWithAdminCode, signOutUser, adminEmail } = useAuth();
+  const { user, isAdmin, isLoading: authLoading, signInWithGoogle, signOutUser, adminEmail } = useAuth();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'repairs' | 'customers' | 'database'>('overview');
-  const [passcodeInput, setPasscodeInput] = useState('');
   const [loginError, setLoginError] = useState<string | null>(null);
 
   // Data states
@@ -124,31 +124,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
     setTimeout(() => setActionMessage(null), 3500);
   };
 
-  const handlePasscodeLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoginError(null);
-    const success = loginWithAdminCode(passcodeInput);
-    if (!success) {
-      setLoginError('Invalid Administrator Passcode. (Hint for development: icontech2026)');
-    }
-  };
-
-  const handleProductImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProductImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 3 * 1024 * 1024) {
-        alert('Image file is larger than 3MB. Please select an optimized image.');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = reader.result as string;
+      try {
+        const compressedBase64 = await processAndCompressImage(file, {
+          maxWidth: 900,
+          maxHeight: 900,
+          quality: 0.8,
+          maxSizeBytes: 10 * 1024 * 1024
+        });
         setProdForm((prev) => ({
           ...prev,
-          images: prev.images.trim() ? `${prev.images}\n${base64}` : base64,
+          images: prev.images.trim() ? `${prev.images}\n${compressedBase64}` : compressedBase64,
         }));
-      };
-      reader.readAsDataURL(file);
+        showNotification('Product photo optimized and added.');
+      } catch (err) {
+        alert(err instanceof Error ? err.message : 'Image upload failed. Please choose a valid image.');
+      }
     }
   };
 
@@ -430,69 +423,74 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
             </div>
           )}
 
-          {/* Option 1: Google Sign In */}
-          <div className="space-y-3">
-            <button
-              onClick={signInWithGoogle}
-              disabled={authLoading}
-              className="w-full py-3 px-4 rounded-xl border border-gray-300 hover:bg-gray-50 text-gray-800 font-bold text-xs sm:text-sm flex items-center justify-center space-x-2 transition shadow-xs"
-            >
-              <svg className="w-4 h-4" viewBox="0 0 24 24">
-                <path
-                  fill="#4285F4"
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                />
-              </svg>
-              <span>Sign in with Google Admin</span>
-            </button>
-            <p className="text-[10px] text-gray-400 text-center">
-              Primary admin email: <strong>{adminEmail}</strong>
-            </p>
-          </div>
-
-          <div className="relative flex py-1 items-center">
-            <div className="grow border-t border-gray-200" />
-            <span className="shrink mx-3 text-gray-400 text-[11px] uppercase font-bold">Or Enter Passcode</span>
-            <div className="grow border-t border-gray-200" />
-          </div>
-
-          {/* Option 2: Admin Passcode Login */}
-          <form onSubmit={handlePasscodeLogin} className="space-y-3">
-            <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">
-                Admin Security Passcode
-              </label>
-              <div className="relative">
-                <input
-                  type="password"
-                  placeholder="Enter admin passcode"
-                  value={passcodeInput}
-                  onChange={(e) => setPasscodeInput(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs border border-gray-300 rounded-xl focus:border-orange-500 focus:outline-hidden"
-                />
-                <Lock className="w-4 h-4 text-gray-400 absolute right-3 top-3" />
+          {/* Firebase Authorized Admin Sign In */}
+          <div className="space-y-4">
+            {user && !isAdmin ? (
+              <div className="p-3.5 bg-red-50 border border-red-200 text-red-800 rounded-xl text-xs space-y-2 text-left">
+                <div className="flex items-center space-x-2 font-bold text-red-900">
+                  <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+                  <span>Access Denied: Not an Authorized Admin</span>
+                </div>
+                <p className="text-[11px] text-red-700 leading-relaxed">
+                  You are currently signed in as <strong>{user.email}</strong>. This account does not possess administrator privileges for ICONTECH.
+                </p>
+                <button
+                  type="button"
+                  onClick={signOutUser}
+                  className="w-full py-2 px-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition text-xs shadow-xs"
+                >
+                  Sign Out &amp; Use Authorized Account
+                </button>
               </div>
-            </div>
+            ) : (
+              <>
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-left">
+                  <div className="flex items-center space-x-2 text-amber-800 font-bold text-xs mb-1">
+                    <ShieldCheck className="w-4 h-4 text-amber-600" />
+                    <span>Cloud Firestore Protected</span>
+                  </div>
+                  <p className="text-[11px] text-amber-700 leading-relaxed">
+                    Administrative access is strictly enforced by Firestore Security Rules. Only authenticated Google accounts registered as authorized managers can view or edit store data.
+                  </p>
+                </div>
 
-            <button
-              type="submit"
-              className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition shadow-md"
-            >
-              Unlock Admin Dashboard
-            </button>
-          </form>
+                <button
+                  onClick={signInWithGoogle}
+                  disabled={authLoading}
+                  className="w-full py-3.5 px-4 rounded-xl border border-gray-300 hover:bg-gray-50 text-gray-800 font-bold text-xs sm:text-sm flex items-center justify-center space-x-2.5 transition shadow-sm bg-white"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24">
+                    <path
+                      fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                    />
+                  </svg>
+                  <span>Sign in with Google Admin</span>
+                </button>
+              </>
+            )}
+
+            <div className="text-center space-y-1">
+              <p className="text-[11px] text-gray-500">
+                Primary Manager: <strong className="text-slate-800">{adminEmail}</strong>
+              </p>
+              <p className="text-[10px] text-gray-400">
+                Passcode bypass has been removed in compliance with Firebase security standards.
+              </p>
+            </div>
+          </div>
 
           <p className="text-[11px] text-gray-400 text-center">
             ICONTECH Electronics &bull; Opposite Adeyemi, Ondo
@@ -1562,7 +1560,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                   ))}
                 </div>
 
-                {/* Previews */}
+                {/* Previews with Delete Button */}
                 {prodForm.images.trim() && (
                   <div className="flex flex-wrap gap-2 pt-1">
                     {prodForm.images
@@ -1570,8 +1568,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                       .map((s) => s.trim())
                       .filter(Boolean)
                       .map((url, i) => (
-                        <div key={i} className="relative w-12 h-12 rounded-lg border border-gray-200 overflow-hidden bg-gray-50">
+                        <div key={i} className="relative group w-14 h-14 rounded-lg border border-gray-200 overflow-hidden bg-gray-50">
                           <img src={url} alt="" className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            title="Remove image"
+                            onClick={() => {
+                              const remaining = prodForm.images
+                                .split('\n')
+                                .map((s) => s.trim())
+                                .filter((_, idx) => idx !== i)
+                                .join('\n');
+                              setProdForm((prev) => ({ ...prev, images: remaining }));
+                            }}
+                            className="absolute top-0.5 right-0.5 p-1 rounded-full bg-red-600 text-white opacity-85 hover:opacity-100 transition shadow-xs cursor-pointer"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
                         </div>
                       ))}
                   </div>

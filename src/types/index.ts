@@ -68,6 +68,7 @@ export interface OrderItem {
 
 export interface Order {
   id: string; // e.g. ICON-ORD-74921
+  customerUid?: string;
   customerName: string;
   customerPhone: string;
   customerEmail?: string;
@@ -98,6 +99,7 @@ export type RepairStatus =
 
 export interface RepairJob {
   id: string; // e.g. ICON-REP-38912
+  customerUid?: string;
   customerName: string;
   customerPhone: string;
   customerEmail?: string;
@@ -112,6 +114,18 @@ export interface RepairJob {
   diagnosticNotes?: string;
   estimatedCompletion?: string;
   paymentStatus?: 'unpaid' | 'deposit_paid' | 'paid';
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CustomerProfile {
+  uid: string;
+  name: string;
+  phone: string;
+  normalizedPhone: string;
+  email?: string;
+  defaultAddress?: string;
+  role?: string;
   createdAt: string;
   updatedAt?: string;
 }

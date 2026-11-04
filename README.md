@@ -58,10 +58,32 @@ Inspired by the vibrant, high-conversion shopping experience of Jumia and Temu, 
    - Store hours: Mon–Sat 8:00 AM – 7:00 PM, Sun 12:00 PM – 5:00 PM.
    - Click-to-call `07039420600` and direct WhatsApp chat links.
 
+### 👤 Customer Authentication & Account Hub
+1. **Registration (Create Account)**:
+   - Full Name, Nigerian Phone Number (`+234` format or local `070...`, `080...`, `081...`, `090...`, `091...`), password with confirmation.
+   - Comprehensive input validation and Nigerian phone format normalization.
+2. **Customer Sign In**:
+   - Log in using Phone Number and Password.
+   - Show / Hide password toggles.
+   - Real-time error messages (invalid credentials, network issues).
+   - Session persistence via Firebase Authentication state listeners.
+3. **Customer Account Dashboard (`My Account`)**:
+   - View customer name, verified phone number, joined date, and email.
+   - Update customer profile details (Full Name, Delivery Address, Contact Email).
+   - View customer's personal order history with order items, totals, delivery status, and tracking links.
+   - View customer's device repair tickets with live 8-stage repair pipeline status and technician diagnosis notes.
+   - Safe Customer Sign Out returning customer to the public storefront.
+4. **Seamless Storefront Integration**:
+   - Header shows "Sign In" and "Create Account" when logged out.
+   - Displays "Hi, [Customer Name]", "My Account", and "Sign Out" when logged in.
+   - Auto-fills customer name, phone number, and address during Checkout and Repair booking.
+   - Binds `customerUid` to orders and repairs so history automatically syncs to their account.
+
 ### 🛡️ Admin Dashboard (Backoffice)
 - **Authentication**:
-  - Secure Google Sign-In with allowlisted primary admin email (`raydiamond108@gmail.com`).
-  - Development access passcode option (`icontech2026`).
+   - Secure Google Sign-In with allowlisted primary admin email (`raydiamond108@gmail.com`).
+   - Development access passcode option (`icontech2026`).
+   - Admin authentication is strictly isolated from customer accounts.
 - **Dashboard Metrics**:
   - Total Sales Revenue (₦), Total Orders Count, Pending Orders, Catalog Products, Low Stock Alerts, Active Repair Jobs, Completed Repairs.
 - **Product Management**:
@@ -111,27 +133,51 @@ cd icontech-gadgets
 npm install
 ```
 
-### 4. Firebase Configuration
-The app uses `firebase-applet-config.json` for Firebase credentials. Ensure this file is in the project root:
-```json
-{
-  "projectId": "YOUR_FIREBASE_PROJECT_ID",
-  "appId": "YOUR_APP_ID",
-  "apiKey": "YOUR_API_KEY",
-  "authDomain": "YOUR_PROJECT.firebaseapp.com",
-  "firestoreDatabaseId": "YOUR_DATABASE_ID",
-  "storageBucket": "YOUR_STORAGE_BUCKET"
-}
+### 4. Firebase Configuration & Authentication Setup
+
+#### A. Firebase Console Setup (Required for Customer Sign In & Registration)
+1. Go to your **[Firebase Console](https://console.firebase.google.com/)** and select your project.
+2. In the left navigation, click on **Build** > **Authentication**.
+3. Under the **Sign-in method** tab:
+   - Click **Email/Password**.
+   - Enable **Email/Password** (Email link / passwordless is not needed).
+   - Click **Save**.
+   *(Note: ICONTECH maps normalized Nigerian phone numbers to secure customer auth identifiers behind the scenes, utilizing Firebase's high-security credential hashing and session engine without requiring third-party SMS gateway fees).*
+4. Under **Firestore Database**, ensure your security rules match `firestore.rules`.
+
+#### B. Environment Configuration & Google AI Studio Variables
+The application reads configuration with automatic fallback:
+1. First, it looks for `import.meta.env.VITE_FIREBASE_*` variables.
+2. If those are not set, it automatically reuses the registered configuration in `firebase-applet-config.json`.
+
+If you configure environment variables in Google AI Studio or your deployment hosting provider (Vercel, Netlify, Cloud Run), copy these exact values:
+
+| Variable Name | Exact Value | Source in Firebase Console |
+| :--- | :--- | :--- |
+| `VITE_FIREBASE_PROJECT_ID` | `gen-lang-client-0571688528` | Project Settings > General > Project ID |
+| `VITE_FIREBASE_APP_ID` | `1:21438484231:web:d37a8279d0d2a861b43fa2` | Project Settings > Your apps > Web app > App ID |
+| `VITE_FIREBASE_API_KEY` | `AIzaSyDfTMIPNgTq4J4pbY02uvOWodT33EZ7Nnw` | Project Settings > General > Web API Key |
+| `VITE_FIREBASE_AUTH_DOMAIN` | `gen-lang-client-0571688528.firebaseapp.com` | Project Settings > Your apps > authDomain |
+| `VITE_FIREBASE_STORAGE_BUCKET` | `gen-lang-client-0571688528.firebasestorage.app` | Project Settings > Your apps > storageBucket |
+| `VITE_FIREBASE_MESSAGING_SENDER_ID` | `21438484231` | Project Settings > Cloud Messaging > Sender ID |
+| `VITE_FIREBASE_DATABASE_ID` | `ai-studio-icontechgadgetsr-7ac8c481-d749-444d-ac81-485a390611a3` | Cloud Firestore > Databases > Database ID |
+
+*(Note: Always use `ai-studio-icontechgadgetsr-7ac8c481-d749-444d-ac81-485a390611a3` as the database ID, not `(default)`).*
+
+### 5. Running Automated Verification Tests
+You can run the end-to-end verification test suite anytime to test phone normalization, admin privilege isolation, customer privacy scoping, and configuration integrity:
+```bash
+npx tsx src/tests/authAndPrivacy.test.ts
 ```
 
-### 5. Running Locally
+### 6. Running Locally
 Start the development server:
 ```bash
 npm run dev
 ```
 Open your browser at `http://localhost:3000`.
 
-### 6. Building for Production
+### 7. Building for Production
 ```bash
 npm run build
 ```

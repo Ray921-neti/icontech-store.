@@ -14,6 +14,7 @@ import {
   UserCheck
 } from 'lucide-react';
 import { getRepairById } from '../services/storeService';
+import { useAuth } from '../context/AuthContext';
 import { RepairJob, RepairStatus } from '../types';
 import { 
   formatNaira, 
@@ -28,6 +29,7 @@ interface RepairTrackingViewProps {
 }
 
 export const RepairTrackingView: React.FC<RepairTrackingViewProps> = ({ initialRefId }) => {
+  const { user, isAdmin } = useAuth();
   const [referenceInput, setReferenceInput] = useState(initialRefId || '');
   const [phoneVerification, setPhoneVerification] = useState('');
   const [repair, setRepair] = useState<RepairJob | null>(null);
@@ -46,6 +48,11 @@ export const RepairTrackingView: React.FC<RepairTrackingViewProps> = ({ initialR
   ];
 
   const searchRepair = async (ref: string, phone?: string) => {
+    if (!user) {
+      setError('Authentication Required: Please sign in to your ICONTECH customer account to view gadget repair diagnostics and price quotes.');
+      return;
+    }
+
     const cleanRef = ref.trim().toUpperCase();
     if (!cleanRef) {
       setError('Please enter your repair reference code (e.g. ICON-REP-10492).');
@@ -64,6 +71,13 @@ export const RepairTrackingView: React.FC<RepairTrackingViewProps> = ({ initialR
         return;
       }
 
+      // Strict ownership check: Only the customer who submitted the device or an admin can view
+      if (!isAdmin && found.customerUid && found.customerUid !== user.uid) {
+        setError('Access Restricted: You do not have permission to view this repair ticket. Please sign into the customer account used to book the repair.');
+        setRepair(null);
+        return;
+      }
+
       // Verification check if phone provided
       if (phone && phone.trim()) {
         const cleanP1 = phone.replace(/[^0-9]/g, '');
@@ -78,7 +92,7 @@ export const RepairTrackingView: React.FC<RepairTrackingViewProps> = ({ initialR
       setRepair(found);
     } catch (e) {
       console.error('Error fetching repair:', e);
-      setError('Failed to fetch repair job status. Please try again.');
+      setError('Failed to fetch repair job status or access denied by security rules.');
     } finally {
       setIsLoading(false);
     }

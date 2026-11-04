@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Wrench, 
   Smartphone, 
@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { createRepairJob } from '../services/storeService';
 import { RepairJob } from '../types';
+import { useAuth } from '../context/AuthContext';
+import { processAndCompressImage } from '../utils/imageUtils';
 import { 
   formatNaira, 
   STORE_LOCATION, 
@@ -28,18 +30,28 @@ import {
 
 interface RepairBookingViewProps {
   onTrackSubmittedRepair: (refId: string) => void;
+  onRequireLogin?: () => void;
 }
 
-export const RepairBookingView: React.FC<RepairBookingViewProps> = ({ onTrackSubmittedRepair }) => {
-  const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
-  const [customerEmail, setCustomerEmail] = useState('');
+export const RepairBookingView: React.FC<RepairBookingViewProps> = ({ onTrackSubmittedRepair, onRequireLogin }) => {
+  const { customerProfile } = useAuth();
+  const [customerName, setCustomerName] = useState(customerProfile?.name || '');
+  const [customerPhone, setCustomerPhone] = useState(customerProfile?.phone || '');
+  const [customerEmail, setCustomerEmail] = useState(customerProfile?.email || '');
   const [gadgetType, setGadgetType] = useState('Smartphone');
   const [brandModel, setBrandModel] = useState('');
   const [faultCategory, setFaultCategory] = useState('Screen Replacement');
   const [faultDescription, setFaultDescription] = useState('');
   const [passcode, setPasscode] = useState('');
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (customerProfile) {
+      if (!customerName) setCustomerName(customerProfile.name);
+      if (!customerPhone) setCustomerPhone(customerProfile.phone);
+      if (!customerEmail && customerProfile.email) setCustomerEmail(customerProfile.email);
+    }
+  }, [customerProfile]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,18 +77,26 @@ export const RepairBookingView: React.FC<RepairBookingViewProps> = ({ onTrackSub
     'OS Reinstallation / Software / Unlock',
   ];
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [isProcessingPhoto, setIsProcessingPhoto] = useState(false);
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 3 * 1024 * 1024) {
-        setError('Photo size should be less than 3MB.');
-        return;
+      setError(null);
+      setIsProcessingPhoto(true);
+      try {
+        const compressedBase64 = await processAndCompressImage(file, {
+          maxWidth: 900,
+          maxHeight: 900,
+          quality: 0.8,
+          maxSizeBytes: 10 * 1024 * 1024
+        });
+        setPhotoPreview(compressedBase64);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Photo processing failed. Please select a JPEG or PNG photo.');
+      } finally {
+        setIsProcessingPhoto(false);
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotoPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
     }
   };
 
@@ -91,6 +111,10 @@ export const RepairBookingView: React.FC<RepairBookingViewProps> = ({ onTrackSub
     e.preventDefault();
     setError(null);
 
+    if (!customerProfile) {
+      setError('Account Required: Please sign in or create an account to book a repair ticket so your diagnostic records are securely protected.');
+      return;
+    }
     if (!customerName.trim()) {
       setError('Please provide your full name.');
       return;
@@ -121,6 +145,7 @@ export const RepairBookingView: React.FC<RepairBookingViewProps> = ({ onTrackSub
         faultDescription: faultDescription.trim(),
         passcodeProvided: passcode.trim() || undefined,
         photoUrl: photoPreview || undefined,
+        customerUid: customerProfile?.uid || undefined,
       };
 
       const job = await createRepairJob(repairData);
@@ -269,6 +294,29 @@ export const RepairBookingView: React.FC<RepairBookingViewProps> = ({ onTrackSub
             </div>
           )}
 
+          {!customerProfile && (
+            <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl text-xs space-y-2">
+              <div className="flex items-center text-orange-950 font-bold">
+                <AlertCircle className="w-4 h-4 mr-2 text-orange-600 shrink-0" />
+                <span>Customer Account Required for Repair Booking</span>
+              </div>
+              <p className="text-orange-900 text-[11px] leading-relaxed">
+                To keep your device diagnostic records and price quotes confidential, all repair jobs are linked to your verified phone account. Please sign in or create an account to book your diagnostic.
+              </p>
+              {onRequireLogin && (
+                <div>
+                  <button
+                    type="button"
+                    onClick={onRequireLogin}
+                    className="inline-flex items-center px-3.5 py-1.5 rounded-lg bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-xs transition"
+                  >
+                    Sign In / Create Free Account
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* 1. Gadget Category Selection */}
           <div className="space-y-3">
             <label className="block text-xs font-black uppercase tracking-wider text-gray-500">
@@ -347,28 +395,45 @@ export const RepairBookingView: React.FC<RepairBookingViewProps> = ({ onTrackSub
                 Attach Photo of Damage <span className="text-gray-400 font-normal">(Optional)</span>
               </label>
               <div className="border-2 border-dashed border-gray-300 rounded-xl p-3 text-center hover:border-orange-500 transition">
-                {photoPreview ? (
-                  <div className="relative">
+                {isProcessingPhoto ? (
+                  <div className="py-6 space-y-2">
+                    <div className="w-6 h-6 border-2 border-orange-600 border-t-transparent rounded-full animate-spin mx-auto" />
+                    <span className="text-xs text-orange-600 font-semibold block">Optimizing device photo...</span>
+                  </div>
+                ) : photoPreview ? (
+                  <div className="relative space-y-2">
                     <img
                       src={photoPreview}
                       alt="Fault preview"
-                      className="max-h-36 mx-auto rounded-lg object-contain"
+                      className="max-h-36 mx-auto rounded-lg object-contain shadow-xs border border-gray-200"
                     />
-                    <button
-                      type="button"
-                      onClick={() => setPhotoPreview(null)}
-                      className="mt-2 text-[11px] text-red-600 hover:underline"
-                    >
-                      Remove photo
-                    </button>
+                    <div className="flex items-center justify-center gap-3">
+                      <label className="text-[11px] font-bold text-orange-600 hover:underline cursor-pointer">
+                        Change photo
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handlePhotoUpload}
+                          className="hidden"
+                        />
+                      </label>
+                      <span className="text-gray-300">&bull;</span>
+                      <button
+                        type="button"
+                        onClick={() => setPhotoPreview(null)}
+                        className="text-[11px] font-bold text-red-600 hover:underline"
+                      >
+                        Remove photo
+                      </button>
+                    </div>
                   </div>
                 ) : (
-                  <label className="cursor-pointer block space-y-1">
+                  <label className="cursor-pointer block space-y-1 py-1">
                     <Camera className="w-6 h-6 mx-auto text-gray-400" />
                     <span className="text-xs text-orange-600 font-bold block">
                       Upload photo or take snapshot
                     </span>
-                    <span className="text-[10px] text-gray-400 block">PNG, JPG up to 3MB</span>
+                    <span className="text-[10px] text-gray-400 block">PNG, JPG, WebP auto-compressed</span>
                     <input
                       type="file"
                       accept="image/*"
