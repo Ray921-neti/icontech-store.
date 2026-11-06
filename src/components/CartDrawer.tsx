@@ -40,16 +40,16 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     <div className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-xs flex justify-end">
       <div className="w-full max-w-md bg-white h-full shadow-2xl flex flex-col justify-between animate-in slide-in-from-right duration-300">
         {/* Header */}
-        <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-slate-900 text-white">
+        <div className="p-4 border-b border-white/10 flex items-center justify-between bg-[#082B62] text-white">
           <div className="flex items-center space-x-2">
-            <ShoppingBag className="w-5 h-5 text-orange-400" />
+            <ShoppingBag className="w-5 h-5 text-[#FF7900]" />
             <h2 className="text-base font-black tracking-tight">
               Your Shopping Cart ({totalItems})
             </h2>
           </div>
           <button
             onClick={() => setIsCartOpen(false)}
-            className="p-1 rounded-full text-gray-300 hover:text-white hover:bg-slate-800 transition"
+            className="p-1 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition cursor-pointer"
             aria-label="Close cart"
           >
             <X className="w-5 h-5" />
@@ -172,9 +172,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                   )}
                 </span>
               </div>
-              <div className="flex justify-between text-sm font-black text-slate-950 pt-2 border-t border-gray-100">
+              <div className="flex justify-between text-sm font-black text-[#10264D] pt-2 border-t border-[#E5ECF5]">
                 <span>Total Amount:</span>
-                <span className="text-orange-600 text-base">{formatNaira(totalAmount)}</span>
+                <span className="text-[#075CE5] text-base">{formatNaira(totalAmount)}</span>
               </div>
             </div>
 
@@ -184,7 +184,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                   setIsCartOpen(false);
                   onProceedToCheckout();
                 }}
-                className="w-full py-3 bg-orange-600 hover:bg-orange-700 text-white font-black text-sm rounded-xl transition shadow-lg flex items-center justify-center space-x-2"
+                className="w-full py-3 bg-[#075CE5] hover:bg-[#064ec4] text-white font-black text-sm rounded-xl transition shadow-md flex items-center justify-center space-x-2 cursor-pointer"
               >
                 <span>Proceed to Checkout</span>
                 <ArrowRight className="w-4 h-4" />

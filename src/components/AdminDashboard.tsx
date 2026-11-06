@@ -1534,15 +1534,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                 <div className="flex flex-wrap items-center gap-1.5 pt-1">
                   <span className="text-[10px] text-gray-400 font-semibold">Repository Presets:</span>
                   {[
-                    { label: 'Phone', path: '/images/categories/smartphones.svg' },
-                    { label: 'Laptop', path: '/images/categories/laptops.svg' },
-                    { label: 'Tablet', path: '/images/categories/tablets.svg' },
-                    { label: 'Charger', path: '/images/categories/chargers.svg' },
-                    { label: 'Audio', path: '/images/categories/earpieces.svg' },
-                    { label: 'PowerBank', path: '/images/categories/powerbanks.svg' },
-                    { label: 'Watch', path: '/images/categories/smartwatches.svg' },
-                    { label: 'Case', path: '/images/categories/phonecases.svg' },
-                    { label: 'Glass', path: '/images/categories/screenprotectors.svg' },
+                    { label: 'Phone', path: '/images/categories/smartphones.jpg' },
+                    { label: 'Laptop', path: '/images/categories/laptops.jpg' },
+                    { label: 'Tablet', path: '/images/categories/tablets.jpg' },
+                    { label: 'Charger', path: '/images/categories/chargers.jpg' },
+                    { label: 'Audio', path: '/images/categories/earpieces.jpg' },
+                    { label: 'PowerBank', path: '/images/categories/powerbanks.jpg' },
+                    { label: 'Watch', path: '/images/categories/smartwatches.jpg' },
+                    { label: 'Case', path: '/images/categories/phonecases.jpg' },
+                    { label: 'Glass', path: '/images/categories/screenprotectors.jpg' },
                   ].map((preset) => (
                     <button
                       key={preset.label}

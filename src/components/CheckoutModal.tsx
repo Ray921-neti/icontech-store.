@@ -519,16 +519,16 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   {effectiveDeliveryFee === 0 ? 'FREE' : formatNaira(effectiveDeliveryFee)}
                 </span>
               </div>
-              <div className="flex justify-between text-sm font-black text-slate-950 pt-1.5 border-t border-gray-200">
+              <div className="flex justify-between text-sm font-black text-[#10264D] pt-1.5 border-t border-[#E5ECF5]">
                 <span>Grand Total:</span>
-                <span className="text-orange-600">{formatNaira(grandTotal)}</span>
+                <span className="text-[#075CE5]">{formatNaira(grandTotal)}</span>
               </div>
             </div>
 
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-3.5 bg-orange-600 hover:bg-orange-700 text-white font-black text-sm rounded-xl transition shadow-lg flex items-center justify-center space-x-2 disabled:bg-gray-400"
+              className="w-full py-3.5 bg-[#075CE5] hover:bg-[#064ec4] text-white font-black text-sm rounded-xl transition shadow-md flex items-center justify-center space-x-2 disabled:bg-gray-400 cursor-pointer"
             >
               {isSubmitting ? (
                 <span>Placing your order...</span>

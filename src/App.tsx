@@ -193,7 +193,7 @@ function Storefront() {
   const bestSellers = products.slice().sort((a, b) => b.reviewsCount - a.reviewsCount).slice(0, 4);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col text-slate-800 font-sans selection:bg-orange-500 selection:text-white">
+    <div className="min-h-screen bg-[#F3F7FC] flex flex-col text-[#10264D] font-sans selection:bg-[#075CE5] selection:text-white">
       {/* Navigation Bar */}
       <Navbar
         activeTab={activeTab}
@@ -207,11 +207,11 @@ function Storefront() {
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 space-y-10">
+      <div className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 space-y-8 sm:space-y-10">
         {/* VIEW 1: HOME PAGE */}
         {activeTab === 'home' && (
-          <div className="space-y-10">
-            {/* Promotional Hero Slider */}
+          <div className="space-y-8 sm:space-y-10">
+            {/* 1. Promotional Hero Banner */}
             <HeroBanner
               onExploreDeals={() => {
                 setSelectedCategory('all');
@@ -220,7 +220,10 @@ function Storefront() {
               onBookRepair={() => setActiveTab('repair-book')}
             />
 
-            {/* Flash Sales with Countdown */}
+            {/* 2. Product Categories directly below Hero Banner */}
+            <CategoryGrid onSelectCategory={handleSelectCategory} />
+
+            {/* 3. Flash Sales with Countdown */}
             <FlashSales
               products={products}
               onSelectProduct={(p) => setSelectedProduct(p)}
@@ -231,43 +234,40 @@ function Storefront() {
               }}
             />
 
-            {/* Category Grid */}
-            <CategoryGrid onSelectCategory={handleSelectCategory} />
-
-            {/* Dedicated Repair Callout Card */}
-            <div className="bg-linear-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-6 sm:p-8 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
-              <div className="relative z-10 space-y-2 max-w-xl">
-                <span className="text-xs uppercase font-black tracking-widest text-orange-400 block">
+            {/* 4. Dedicated Repair Callout Card */}
+            <div className="bg-[#082B62] rounded-3xl p-6 sm:p-8 text-white shadow-md border border-[#E5ECF5] flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
+              <div className="relative z-10 space-y-2 max-w-xl text-left">
+                <span className="text-xs uppercase font-black tracking-widest text-[#FF7900] block">
                   Same-Day Repair Engineering
                 </span>
-                <h3 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight">
+                <h3 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight text-white">
                   Need Your iPhone, Samsung, or Laptop Repaired?
                 </h3>
-                <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">
+                <p className="text-xs sm:text-sm text-[#DCEBFF] leading-relaxed">
                   Fast screen replacements, original batteries, charging port repair, and water damage recovery. Walk in today opposite Adeyemi College, Ondo.
                 </p>
                 <div className="pt-2 flex flex-wrap gap-3">
                   <button
                     onClick={() => setActiveTab('repair-book')}
-                    className="px-5 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs sm:text-sm rounded-xl transition shadow-md flex items-center"
+                    className="px-6 py-2.5 bg-[#FF7900] hover:bg-[#e06b00] text-white font-bold text-xs sm:text-sm rounded-full transition shadow-sm flex items-center cursor-pointer"
                   >
                     <Wrench className="w-4 h-4 mr-2" />
                     Book Free Diagnostics
                   </button>
                   <button
                     onClick={() => setActiveTab('repair-track')}
-                    className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm rounded-xl transition border border-white/20"
+                    className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm rounded-full transition border border-white/20 cursor-pointer"
                   >
                     Track Existing Repair Ticket
                   </button>
                 </div>
               </div>
 
-              <div className="relative z-10 shrink-0 w-full md:w-auto bg-slate-800/80 backdrop-blur-md p-4 rounded-xl border border-slate-700 text-xs space-y-2">
-                <span className="font-bold text-orange-400 block text-xs">Ondo Service Center:</span>
-                <p className="text-gray-300 font-medium">{STORE_LOCATION}</p>
-                <p className="text-gray-300 font-bold">Call/WhatsApp: {STORE_PHONE}</p>
-                <div className="pt-1 text-[11px] text-emerald-400 font-semibold flex items-center">
+              <div className="relative z-10 shrink-0 w-full md:w-auto bg-[#0b387e] p-4 rounded-2xl border border-white/10 text-xs space-y-2 text-left">
+                <span className="font-bold text-[#FF7900] block text-xs">Ondo Service Center:</span>
+                <p className="text-[#DCEBFF] font-medium">{STORE_LOCATION}</p>
+                <p className="text-white font-bold">Call/WhatsApp: {STORE_PHONE}</p>
+                <div className="pt-1 text-[11px] text-emerald-300 font-semibold flex items-center">
                   <ShieldCheck className="w-3.5 h-3.5 mr-1" />
                   90-Day Warranty on Replaced Parts
                 </div>
@@ -278,11 +278,11 @@ function Storefront() {
             <section className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                  <h2 className="text-xl sm:text-2xl font-black text-[#10264D] tracking-tight flex items-center gap-2">
                     Featured Gadgets &amp; Hot Arrivals
-                    <Sparkles className="w-4 h-4 text-orange-500" />
+                    <Sparkles className="w-4 h-4 text-[#FF7900]" />
                   </h2>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-[#718096]">
                     Hand-picked top tier smartphones, laptops, and certified electronics
                   </p>
                 </div>
@@ -291,7 +291,7 @@ function Storefront() {
                     setSelectedCategory('all');
                     setActiveTab('shop');
                   }}
-                  className="text-xs font-bold text-orange-600 hover:text-orange-700 transition flex items-center"
+                  className="text-xs font-bold text-[#075CE5] hover:text-[#064ec4] transition flex items-center cursor-pointer"
                 >
                   See All ({products.length})
                   <ArrowRight className="w-3.5 h-3.5 ml-1" />
@@ -314,11 +314,11 @@ function Storefront() {
             <section className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-emerald-600" />
+                  <h2 className="text-xl sm:text-2xl font-black text-[#10264D] tracking-tight flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-[#075CE5]" />
                     Best Sellers &amp; Student Essentials
                   </h2>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-[#718096]">
                     High capacity power banks, GaN chargers, AirPods, and privacy screen protectors
                   </p>
                 </div>
@@ -342,29 +342,29 @@ function Storefront() {
         {activeTab === 'shop' && (
           <div className="space-y-6">
             {/* Header with breadcrumbs & active category title */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="bg-white rounded-2xl border border-[#E5ECF5] p-4 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <span className="text-xs font-bold text-orange-600 uppercase tracking-wider block">
+                <span className="text-xs font-bold text-[#FF7900] uppercase tracking-wider block">
                   Catalog &bull;{' '}
                   {selectedCategory === 'all'
                     ? 'All Categories'
                     : CATEGORIES.find((c) => c.id === selectedCategory)?.label}
                 </span>
-                <h1 className="text-xl sm:text-2xl font-black text-slate-900 mt-0.5">
+                <h1 className="text-xl sm:text-2xl font-black text-[#10264D] mt-0.5">
                   {selectedCategory === 'all' ? 'All Gadgets & Accessories' : CATEGORIES.find((c) => c.id === selectedCategory)?.label}
                 </h1>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-[#718096] mt-1">
                   Showing {filteredProducts.length} items with authentic Nigerian store warranty
                 </p>
               </div>
 
               {/* Sorting Dropdown */}
               <div className="flex items-center space-x-2">
-                <span className="text-xs font-bold text-gray-500">Sort By:</span>
+                <span className="text-xs font-bold text-[#718096]">Sort By:</span>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  className="px-3 py-2 text-xs border border-gray-300 rounded-xl bg-white font-medium focus:outline-hidden"
+                  className="px-3 py-2 text-xs border border-[#E5ECF5] rounded-xl bg-white text-[#10264D] font-medium focus:outline-hidden focus:border-[#075CE5]"
                 >
                   <option value="featured">Featured First</option>
                   <option value="price-asc">Price: Low to High</option>
@@ -378,10 +378,10 @@ function Storefront() {
             <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar text-xs font-bold">
               <button
                 onClick={() => setSelectedCategory('all')}
-                className={`px-3.5 py-2 rounded-full shrink-0 transition ${
+                className={`px-3.5 py-2 rounded-full shrink-0 transition cursor-pointer ${
                   selectedCategory === 'all'
-                    ? 'bg-orange-600 text-white shadow-sm'
-                    : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                    ? 'bg-[#075CE5] text-white shadow-sm'
+                    : 'bg-white border border-[#E5ECF5] text-[#10264D] hover:bg-[#F3F7FC]'
                 }`}
               >
                 All Products ({products.length})
@@ -390,10 +390,10 @@ function Storefront() {
                 <button
                   key={cat.id}
                   onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-3.5 py-2 rounded-full shrink-0 transition ${
+                  className={`px-3.5 py-2 rounded-full shrink-0 transition cursor-pointer ${
                     selectedCategory === cat.id
-                      ? 'bg-orange-600 text-white shadow-sm'
-                      : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                      ? 'bg-[#075CE5] text-white shadow-sm'
+                      : 'bg-white border border-[#E5ECF5] text-[#10264D] hover:bg-[#F3F7FC]'
                   }`}
                 >
                   {cat.label}
@@ -414,13 +414,13 @@ function Storefront() {
                 ))}
               </div>
             ) : (
-              <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center space-y-4">
-                <div className="w-16 h-16 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center mx-auto">
+              <div className="bg-white rounded-2xl border border-[#E5ECF5] p-12 text-center space-y-4">
+                <div className="w-16 h-16 rounded-full bg-[#DCEBFF] text-[#075CE5] flex items-center justify-center mx-auto">
                   <Filter className="w-8 h-8" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900 text-base">No products found</h3>
-                  <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
+                  <h3 className="font-bold text-[#10264D] text-base">No products found</h3>
+                  <p className="text-xs text-[#718096] mt-1 max-w-sm mx-auto">
                     We could not find any products matching your current filters. Try resetting the category or search query.
                   </p>
                 </div>
@@ -429,7 +429,7 @@ function Storefront() {
                     setSelectedCategory('all');
                     setSearchQuery('');
                   }}
-                  className="px-5 py-2 bg-orange-600 text-white text-xs font-bold rounded-xl hover:bg-orange-700 transition"
+                  className="px-5 py-2 bg-[#075CE5] text-white text-xs font-bold rounded-xl hover:bg-[#064ec4] transition cursor-pointer"
                 >
                   Reset All Filters
                 </button>
@@ -490,12 +490,12 @@ function Storefront() {
         )}
       </div>
 
-      {/* Floating Action Buttons (WhatsApp & Scroll to Top) */}
+      {/* Floating Action Buttons (WhatsApp & Scroll to Top matching reference image) */}
       <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end space-y-2.5 pointer-events-none">
-        {/* Floating Scroll to Top Button */}
+        {/* Floating Scroll to Top Button (Royal Blue #075CE5) */}
         <button
           onClick={scrollToTop}
-          className={`pointer-events-auto p-3 rounded-full bg-slate-900/90 hover:bg-orange-600 text-white shadow-2xl backdrop-blur-md border border-white/20 transition-all duration-300 transform flex items-center justify-center group ${
+          className={`pointer-events-auto w-11 h-11 rounded-full bg-[#075CE5] hover:bg-[#064ec4] text-white shadow-xl border border-white/20 transition-all duration-300 transform flex items-center justify-center group ${
             showScrollTop
               ? 'opacity-100 translate-y-0 scale-100 cursor-pointer'
               : 'opacity-0 translate-y-4 scale-75 pointer-events-none'
@@ -503,18 +503,18 @@ function Storefront() {
           aria-label="Scroll to top"
           title="Scroll to top"
         >
-          <ChevronUp className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />
+          <ChevronUp className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform stroke-[2.5]" />
         </button>
 
-        {/* Floating WhatsApp Quick Action Button */}
+        {/* Floating WhatsApp Quick Action Button (Vibrant WhatsApp Green #25D366) */}
         <a
           href={createWhatsAppUrl('Hello ICONTECH, I am on your website and would like assistance with gadgets or repairs.')}
           target="_blank"
           rel="noopener noreferrer"
-          className="pointer-events-auto bg-emerald-600 hover:bg-emerald-700 text-white p-3.5 rounded-full shadow-2xl flex items-center justify-center transition hover:scale-105 group"
+          className="pointer-events-auto bg-[#25D366] hover:bg-[#20bd5a] text-white p-3 rounded-full shadow-2xl flex items-center justify-center transition hover:scale-105 group border border-white/20 cursor-pointer"
           aria-label="WhatsApp Support"
         >
-          <MessageCircle className="w-6 h-6 fill-current" />
+          <MessageCircle className="w-6 h-6 fill-white text-white" />
           <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs transition-all duration-300 ease-in-out text-xs font-bold group-hover:ml-2">
             Chat with ICONTECH
           </span>

@@ -33,15 +33,15 @@ export const ContactView: React.FC = () => {
   return (
     <div className="max-w-5xl mx-auto space-y-8">
       {/* Hero Header */}
-      <div className="bg-slate-900 rounded-2xl p-6 sm:p-10 text-white shadow-xl">
+      <div className="bg-[#082B62] rounded-3xl p-6 sm:p-10 text-white shadow-md border border-[#E5ECF5]">
         <div className="max-w-2xl space-y-3">
-          <span className="text-xs uppercase font-black tracking-widest text-orange-400 block">
+          <span className="text-xs uppercase font-black tracking-widest text-[#FF7900] block">
             Visit Our Showroom &amp; Service Lab
           </span>
           <h1 className="text-3xl sm:text-4xl font-black tracking-tight leading-tight">
             Contact &amp; Store Location
           </h1>
-          <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">
+          <p className="text-xs sm:text-sm text-[#DCEBFF] leading-relaxed">
             Located right opposite Adeyemi College of Education, Ondo. Stop by for gadget purchases, live device testing, screen replacement, and diagnostic consultations.
           </p>
         </div>
@@ -233,7 +233,7 @@ export const ContactView: React.FC = () => {
                 <div className="pt-2 flex flex-col sm:flex-row gap-2">
                   <button
                     type="submit"
-                    className="flex-1 py-2.5 px-4 bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs rounded-xl transition flex items-center justify-center space-x-1.5 shadow-md"
+                    className="flex-1 py-2.5 px-4 bg-[#075CE5] hover:bg-[#064ec4] text-white font-bold text-xs rounded-xl transition flex items-center justify-center space-x-1.5 shadow-sm cursor-pointer"
                   >
                     <Send className="w-3.5 h-3.5" />
                     <span>Submit Message</span>

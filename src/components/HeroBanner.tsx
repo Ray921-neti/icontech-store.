@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Sparkles, 
-  Wrench, 
+  ArrowRight, 
+  ChevronLeft, 
+  ChevronRight, 
   ShieldCheck, 
   Truck, 
-  Zap, 
-  ChevronRight, 
-  ChevronLeft,
-  ArrowRight
+  Headphones 
 } from 'lucide-react';
 
 interface HeroBannerProps {
@@ -20,170 +18,215 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ onExploreDeals, onBookRe
 
   const slides = [
     {
-      title: 'ICONTECH Gadget Mega Deals',
-      subtitle: 'Premium Smartphones, MacBooks & Accessories at Unbeatable Nigerian Naira Prices',
-      badge: 'JUMIA & TEMU STYLE FLASH SALE',
-      ctaText: 'Shop Hot Gadgets',
-      bgGradient: 'from-orange-600 via-amber-600 to-rose-700',
+      badge: 'ICONTECH',
+      headingLine1: 'Your One-Stop',
+      headingLine2: 'Gadget Store',
+      tagline: 'Buy • Repair • Upgrade',
+      description: 'Top brands. Great prices. Excellent service.',
+      ctaText: 'Shop Now',
       action: onExploreDeals,
-      image: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=800&auto=format&fit=crop&q=80',
     },
     {
-      title: 'Expert Gadget Repair Center',
-      subtitle: 'Cracked screen? Dead battery? Water damage? Professional diagnostics opposite Adeyemi College, Ondo.',
-      badge: 'SAME-DAY REPAIR SERVICE',
-      ctaText: 'Book Free Diagnostic',
-      bgGradient: 'from-blue-700 via-indigo-700 to-slate-900',
+      badge: 'EXPERT LAB',
+      headingLine1: 'Fast & Reliable',
+      headingLine2: 'Gadget Repairs',
+      tagline: 'Same-Day Diagnostics',
+      description: 'Screen, battery, and motherboard engineering in Ondo.',
+      ctaText: 'Book Diagnostics',
       action: onBookRepair,
-      image: 'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=800&auto=format&fit=crop&q=80',
     },
     {
-      title: 'Heavy Duty 40,000mAh Power Banks',
-      subtitle: 'Keep your laptops and smartphones alive through any power outages with fast GaN chargers.',
-      badge: 'TOP SELLER IN ONDO',
-      ctaText: 'View Power Solutions',
-      bgGradient: 'from-emerald-700 via-teal-700 to-slate-900',
+      badge: 'MEGA POWER',
+      headingLine1: 'Heavy-Duty',
+      headingLine2: 'Power Banks',
+      tagline: 'Stay Powered 24/7',
+      description: '40,000mAh monster batteries with fast GaN chargers.',
+      ctaText: 'View Power Banks',
       action: onExploreDeals,
-      image: 'https://images.unsplash.com/photo-1609592424109-dd9892f1b177?w=800&auto=format&fit=crop&q=80',
     },
   ];
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 6500);
+    }, 7000);
     return () => clearInterval(timer);
   }, [slides.length]);
 
   const slide = slides[currentSlide];
 
   return (
-    <div className="space-y-4">
-      {/* Main Hero Slider */}
-      <div className="relative rounded-2xl overflow-hidden shadow-xl min-h-[340px] md:min-h-[380px] text-white flex items-center">
-        {/* Background gradient transition */}
-        <div className={`absolute inset-0 bg-linear-to-r ${slide.bgGradient} transition-all duration-700`} />
-        
-        {/* Subtle patterned overlay */}
-        <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]" />
+    <div className="relative w-full rounded-3xl overflow-hidden border border-[#E5ECF5] shadow-sm bg-gradient-to-r from-[#E8F1FC] via-[#F1F6FD] to-[#FFFFFF] min-h-[420px] md:min-h-[460px] flex items-center">
+      {/* Background Soft Glow Elements */}
+      <div className="absolute top-0 right-1/4 w-96 h-96 bg-[#DCEBFF]/60 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 right-10 w-72 h-72 bg-blue-100/40 rounded-full blur-2xl pointer-events-none" />
 
-        <div className="relative z-10 max-w-7xl mx-auto px-6 py-8 md:py-12 w-full grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
-          <div className="md:col-span-7 space-y-4">
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-black tracking-wider bg-white/20 backdrop-blur-xs text-amber-200 uppercase border border-white/20">
-              <Sparkles className="w-3.5 h-3.5 mr-1 text-amber-300" />
+      {/* Main Grid: Content (Left) + Device Showcase & Trust Highlights (Right) */}
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-10 py-8 md:py-12 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+        {/* Left Side: Headlines & CTA */}
+        <div className="lg:col-span-5 space-y-4 text-left">
+          {/* Orange Brand Badge */}
+          <div>
+            <span className="inline-block bg-[#FF7900] text-white text-xs font-black uppercase tracking-wider px-3.5 py-1 rounded-full shadow-xs">
               {slide.badge}
             </span>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-tight text-white drop-shadow-sm">
-              {slide.title}
-            </h1>
-            <p className="text-sm sm:text-base text-gray-100 max-w-xl font-normal leading-relaxed drop-shadow-xs">
-              {slide.subtitle}
+          </div>
+
+          {/* Heading */}
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[50px] font-black tracking-tight leading-[1.08]">
+            <span className="text-[#082B62] block">{slide.headingLine1}</span>
+            <span className="text-[#075CE5] block">{slide.headingLine2}</span>
+          </h1>
+
+          {/* Subtitle & Tagline */}
+          <div className="space-y-1">
+            <p className="text-xl sm:text-2xl font-bold text-[#082B62] tracking-tight">
+              {slide.tagline}
             </p>
-            <div className="pt-2 flex flex-wrap gap-3">
-              <button
-                onClick={slide.action}
-                className="px-6 py-3 rounded-full bg-white text-slate-900 font-bold text-sm hover:bg-amber-300 hover:text-slate-950 transition transform hover:-translate-y-0.5 shadow-lg flex items-center"
-              >
-                {slide.ctaText}
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </button>
-              <button
-                onClick={onBookRepair}
-                className="px-6 py-3 rounded-full bg-slate-900/60 backdrop-blur-md text-white border border-white/30 font-bold text-sm hover:bg-slate-900/90 transition flex items-center"
-              >
-                <Wrench className="w-4 h-4 mr-2 text-orange-400" />
-                Repair Phone/Laptop
-              </button>
+            <p className="text-sm sm:text-base text-[#718096] font-medium">
+              {slide.description}
+            </p>
+          </div>
+
+          {/* CTA Button */}
+          <div className="pt-2">
+            <button
+              onClick={slide.action}
+              className="inline-flex items-center px-7 py-3 rounded-full bg-[#075CE5] hover:bg-[#064ec7] text-white font-bold text-sm shadow-md transition-all duration-200 transform hover:-translate-y-0.5 cursor-pointer"
+            >
+              <span>{slide.ctaText}</span>
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </button>
+          </div>
+        </div>
+
+        {/* Center / Right: Gadgets Showcase & Trust Highlights */}
+        <div className="lg:col-span-7 flex flex-col md:flex-row items-center justify-between gap-6 relative">
+          {/* Gadget Showcase on circular platform */}
+          <div className="relative flex-1 flex items-center justify-center w-full min-h-[260px] sm:min-h-[300px]">
+            {/* White pedestal ring/shadow */}
+            <div className="absolute bottom-2 w-72 sm:w-96 h-20 bg-gradient-to-t from-[#DCEBFF]/80 to-transparent rounded-[100%] blur-md" />
+            <div className="absolute bottom-6 w-64 sm:w-80 h-10 bg-white/90 rounded-[100%] shadow-md border border-white/80" />
+
+            {/* Composite Device Display */}
+            <div className="relative z-10 w-full max-w-[460px] flex items-center justify-center">
+              {/* Device Layout Arrangement */}
+              <div className="relative w-full h-[250px] sm:h-[280px] flex items-center justify-center">
+                {/* 1. Slim Modern Laptop in center-back */}
+                <div className="absolute bottom-8 z-10 w-64 sm:w-72 transform -translate-x-2">
+                  <img
+                    src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=700&auto=format&fit=crop&q=80"
+                    alt="Laptop"
+                    className="w-full h-auto object-contain drop-shadow-xl rounded-lg"
+                  />
+                </div>
+
+                {/* 2. Premium Smartphone on left */}
+                <div className="absolute bottom-6 left-2 sm:left-4 z-20 w-24 sm:w-28 transform -rotate-3 hover:rotate-0 transition-transform duration-300">
+                  <img
+                    src="https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=500&auto=format&fit=crop&q=80"
+                    alt="Smartphone"
+                    className="w-full h-auto object-contain drop-shadow-2xl rounded-2xl"
+                  />
+                </div>
+
+                {/* 3. AirPods Pro in open charging case in center-front */}
+                <div className="absolute bottom-3 z-30 w-20 sm:w-24 transform hover:scale-105 transition-transform duration-300">
+                  <img
+                    src="https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=500&auto=format&fit=crop&q=80"
+                    alt="AirPods"
+                    className="w-full h-auto object-contain drop-shadow-lg rounded-xl"
+                  />
+                </div>
+
+                {/* 4. Smartwatch with colorful screen face */}
+                <div className="absolute bottom-4 right-16 sm:right-24 z-25 w-16 sm:w-20 transform rotate-6 hover:rotate-0 transition-transform duration-300">
+                  <img
+                    src="https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=500&auto=format&fit=crop&q=80"
+                    alt="Smartwatch"
+                    className="w-full h-auto object-contain drop-shadow-xl rounded-xl"
+                  />
+                </div>
+
+                {/* 5. Over-Ear Headphones on far right */}
+                <div className="absolute bottom-6 -right-2 sm:right-2 z-20 w-24 sm:w-32 transform hover:scale-105 transition-transform duration-300">
+                  <img
+                    src="https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=500&auto=format&fit=crop&q=80"
+                    alt="Headphones"
+                    className="w-full h-auto object-contain drop-shadow-2xl"
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="hidden md:flex md:col-span-5 justify-center relative">
-            <div className="relative w-72 h-72 lg:w-80 lg:h-80 rounded-2xl overflow-hidden shadow-2xl border-4 border-white/20 transform rotate-1 hover:rotate-0 transition duration-500">
-              <img
-                src={slide.image}
-                alt={slide.title}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-linear-to-t from-black/50 via-transparent to-transparent" />
-              <div className="absolute bottom-3 left-3 right-3 text-xs bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 text-center font-medium">
-                📍 Opposite Adeyemi, Ondo • 07039420600
+          {/* Far Right: Three Stacked Trust / Service Highlights */}
+          <div className="w-full sm:w-56 shrink-0 flex flex-col space-y-2.5 z-20">
+            {/* Highlight 1: Trusted Store */}
+            <div className="bg-white/95 backdrop-blur-md rounded-2xl p-3 border border-[#E5ECF5] shadow-xs flex items-center space-x-3 transition hover:shadow-md">
+              <div className="w-9 h-9 rounded-xl bg-[#075CE5] text-white flex items-center justify-center shrink-0 shadow-xs">
+                <ShieldCheck className="w-5 h-5 text-white" />
+              </div>
+              <div className="leading-tight text-left">
+                <h4 className="text-xs font-bold text-[#10264D]">Trusted Store</h4>
+                <p className="text-[10px] text-[#718096]">Shop with Confidence</p>
+              </div>
+            </div>
+
+            {/* Highlight 2: Fast Delivery */}
+            <div className="bg-white/95 backdrop-blur-md rounded-2xl p-3 border border-[#E5ECF5] shadow-xs flex items-center space-x-3 transition hover:shadow-md">
+              <div className="w-9 h-9 rounded-xl bg-[#075CE5] text-white flex items-center justify-center shrink-0 shadow-xs">
+                <Truck className="w-5 h-5 text-white" />
+              </div>
+              <div className="leading-tight text-left">
+                <h4 className="text-xs font-bold text-[#10264D]">Fast Delivery</h4>
+                <p className="text-[10px] text-[#718096]">Across Nigeria</p>
+              </div>
+            </div>
+
+            {/* Highlight 3: Expert Support */}
+            <div className="bg-white/95 backdrop-blur-md rounded-2xl p-3 border border-[#E5ECF5] shadow-xs flex items-center space-x-3 transition hover:shadow-md">
+              <div className="w-9 h-9 rounded-xl bg-[#075CE5] text-white flex items-center justify-center shrink-0 shadow-xs">
+                <Headphones className="w-5 h-5 text-white" />
+              </div>
+              <div className="leading-tight text-left">
+                <h4 className="text-xs font-bold text-[#10264D]">Expert Support</h4>
+                <p className="text-[10px] text-[#718096]">Always Here</p>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Carousel controls */}
-        <button
-          onClick={() => setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length)}
-          className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/30 hover:bg-black/60 text-white flex items-center justify-center backdrop-blur-xs transition z-20"
-          aria-label="Previous slide"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        <button
-          onClick={() => setCurrentSlide((prev) => (prev + 1) % slides.length)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/30 hover:bg-black/60 text-white flex items-center justify-center backdrop-blur-xs transition z-20"
-          aria-label="Next slide"
-        >
-          <ChevronRight className="w-5 h-5" />
-        </button>
-
-        {/* Indicators */}
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex space-x-2 z-20">
-          {slides.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setCurrentSlide(i)}
-              className={`h-2 rounded-full transition-all ${
-                i === currentSlide ? 'w-8 bg-amber-400' : 'w-2 bg-white/50'
-              }`}
-              aria-label={`Go to slide ${i + 1}`}
-            />
-          ))}
-        </div>
       </div>
 
-      {/* Trust & Value Props Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
-        <div className="flex items-center space-x-3 p-2">
-          <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 shrink-0">
-            <ShieldCheck className="w-5 h-5" />
-          </div>
-          <div>
-            <h4 className="text-xs font-bold text-gray-900">Genuine Guarantee</h4>
-            <p className="text-[11px] text-gray-500">100% authentic tech with warranty</p>
-          </div>
-        </div>
+      {/* Carousel Navigation Arrows */}
+      <button
+        onClick={() => setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length)}
+        className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-slate-900/35 hover:bg-slate-900/60 text-white flex items-center justify-center transition shadow-md cursor-pointer"
+        aria-label="Previous slide"
+      >
+        <ChevronLeft className="w-5 h-5" />
+      </button>
 
-        <div className="flex items-center space-x-3 p-2">
-          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
-            <Wrench className="w-5 h-5" />
-          </div>
-          <div>
-            <h4 className="text-xs font-bold text-gray-900">Expert Repair Lab</h4>
-            <p className="text-[11px] text-gray-500">Fast repair opposite Adeyemi</p>
-          </div>
-        </div>
+      <button
+        onClick={() => setCurrentSlide((prev) => (prev + 1) % slides.length)}
+        className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-slate-900/35 hover:bg-slate-900/60 text-white flex items-center justify-center transition shadow-md cursor-pointer"
+        aria-label="Next slide"
+      >
+        <ChevronRight className="w-5 h-5" />
+      </button>
 
-        <div className="flex items-center space-x-3 p-2">
-          <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
-            <Truck className="w-5 h-5" />
-          </div>
-          <div>
-            <h4 className="text-xs font-bold text-gray-900">Ondo Campus Pickup</h4>
-            <p className="text-[11px] text-gray-500">In-store pickup &amp; delivery</p>
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-3 p-2">
-          <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 shrink-0">
-            <Zap className="w-5 h-5" />
-          </div>
-          <div>
-            <h4 className="text-xs font-bold text-gray-900">Nigerian Naira (₦)</h4>
-            <p className="text-[11px] text-gray-500">Direct transfer or cash on pickup</p>
-          </div>
-        </div>
+      {/* Carousel Dot Indicators */}
+      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center space-x-1.5">
+        {slides.map((_, idx) => (
+          <button
+            key={idx}
+            onClick={() => setCurrentSlide(idx)}
+            className={`h-2 rounded-full transition-all duration-300 ${
+              idx === currentSlide ? 'w-6 bg-[#075CE5]' : 'w-2 bg-[#CBD5E1] hover:bg-[#94A3B8]'
+            }`}
+            aria-label={`Go to slide ${idx + 1}`}
+          />
+        ))}
       </div>
     </div>
   );

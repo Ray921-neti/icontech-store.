@@ -161,19 +161,19 @@ export const RepairBookingView: React.FC<RepairBookingViewProps> = ({ onTrackSub
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Top Banner */}
-      <div className="bg-linear-to-r from-slate-900 via-orange-950 to-slate-900 rounded-2xl p-6 sm:p-8 text-white shadow-xl">
+      <div className="bg-[#082B62] rounded-3xl p-6 sm:p-8 text-white shadow-md border border-[#E5ECF5]">
         <div className="max-w-2xl space-y-3">
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-orange-600/30 text-orange-400 border border-orange-500/30 uppercase tracking-wider">
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-[#FF7900] text-white uppercase tracking-wider">
             <Wrench className="w-3.5 h-3.5 mr-1.5" />
             Official ICONTECH Repair Center
           </span>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight">
             Book Gadget Repair &amp; Diagnostics
           </h1>
-          <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">
+          <p className="text-xs sm:text-sm text-[#DCEBFF] leading-relaxed">
             Professional micro-soldering, authentic screen replacements, battery tests, and water damage recovery opposite Adeyemi College of Education, Ondo.
           </p>
-          <div className="flex flex-wrap gap-4 pt-2 text-xs text-gray-300">
+          <div className="flex flex-wrap gap-4 pt-2 text-xs text-[#DCEBFF]">
             <span className="flex items-center">
               <CheckCircle className="w-4 h-4 mr-1 text-emerald-400" /> Free Diagnostics
             </span>
@@ -512,7 +512,7 @@ export const RepairBookingView: React.FC<RepairBookingViewProps> = ({ onTrackSub
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full py-4 bg-orange-600 hover:bg-orange-700 text-white font-black text-sm rounded-xl transition shadow-lg flex items-center justify-center space-x-2 disabled:bg-gray-400"
+            className="w-full py-4 bg-[#FF7900] hover:bg-[#e06b00] text-white font-black text-sm rounded-xl transition shadow-md flex items-center justify-center space-x-2 disabled:bg-gray-400 cursor-pointer"
           >
             <Wrench className="w-4 h-4" />
             <span>{isSubmitting ? 'Registering Repair Job...' : 'Submit Device for Diagnostic'}</span>

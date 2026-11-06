@@ -1,16 +1,4 @@
 import React from 'react';
-import { 
-  Smartphone, 
-  Laptop, 
-  Tablet, 
-  Zap, 
-  Headphones, 
-  BatteryCharging, 
-  Watch, 
-  Shield, 
-  Sparkles, 
-  Grid 
-} from 'lucide-react';
 import { CATEGORIES } from '../data/categories';
 import { ProductCategory } from '../types';
 
@@ -19,71 +7,33 @@ interface CategoryGridProps {
 }
 
 export const CategoryGrid: React.FC<CategoryGridProps> = ({ onSelectCategory }) => {
-  const getCategoryIcon = (iconName: string) => {
-    switch (iconName) {
-      case 'Smartphone':
-        return <Smartphone className="w-5 h-5" />;
-      case 'Laptop':
-        return <Laptop className="w-5 h-5" />;
-      case 'Tablet':
-        return <Tablet className="w-5 h-5" />;
-      case 'Zap':
-        return <Zap className="w-5 h-5" />;
-      case 'Headphones':
-        return <Headphones className="w-5 h-5" />;
-      case 'BatteryCharging':
-        return <BatteryCharging className="w-5 h-5" />;
-      case 'Watch':
-        return <Watch className="w-5 h-5" />;
-      case 'Shield':
-        return <Shield className="w-5 h-5" />;
-      case 'Sparkles':
-        return <Sparkles className="w-5 h-5" />;
-      default:
-        return <Grid className="w-5 h-5" />;
-    }
-  };
-
   return (
-    <section className="space-y-3">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg sm:text-xl font-black text-gray-900 tracking-tight">
-            Explore Categories
-          </h2>
-          <p className="text-xs text-gray-500">Shop by gadget type and mobile accessories</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+    <section className="w-full">
+      {/* 10 Clean Category Cards - Real Studio Product Photographs */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-2.5 sm:gap-3">
         {CATEGORIES.map((cat) => (
           <button
             key={cat.id}
             onClick={() => onSelectCategory(cat.id)}
-            className="group p-3.5 bg-white rounded-xl border border-gray-200 hover:border-orange-500 hover:shadow-md transition text-left flex flex-col justify-between h-32 relative overflow-hidden"
+            className="group bg-[#FFFFFF] rounded-2xl border border-[#E5ECF5] hover:border-[#075CE5] shadow-xs hover:shadow-md transition-all duration-200 p-2.5 sm:p-3 flex flex-col items-center justify-between h-[138px] sm:h-[144px] text-center cursor-pointer transform hover:-translate-y-0.5"
           >
-            {/* Background subtle image */}
-            <div className="absolute right-1 bottom-1 w-14 h-14 opacity-20 group-hover:opacity-40 transition duration-300">
+            {/* Realistic Studio Product Photograph */}
+            <div className="w-full h-[82px] sm:h-[86px] flex items-center justify-center p-1 overflow-hidden">
               <img
                 src={cat.localVectorImg || cat.featuredImg}
                 alt={cat.label}
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = cat.featuredImg;
                 }}
-                className="w-full h-full object-contain rounded-tl-xl"
+                className="max-h-[76px] sm:max-h-[80px] w-auto max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
+                loading="lazy"
               />
             </div>
 
-            <div className="w-10 h-10 rounded-xl bg-orange-50 group-hover:bg-orange-600 text-orange-600 group-hover:text-white transition flex items-center justify-center shadow-xs">
-              {getCategoryIcon(cat.iconName)}
-            </div>
-
-            <div className="relative z-10">
-              <h3 className="text-xs sm:text-sm font-bold text-gray-900 group-hover:text-orange-600 transition leading-snug">
+            {/* Category Name Underneath */}
+            <div className="w-full pt-1.5 flex items-center justify-center min-h-[32px]">
+              <span className="text-[11px] sm:text-xs font-bold text-[#10264D] group-hover:text-[#075CE5] transition-colors leading-tight line-clamp-2">
                 {cat.label}
-              </h3>
-              <span className="text-[10px] text-gray-400 font-medium">
-                {cat.itemCount}+ products
               </span>
             </div>
           </button>

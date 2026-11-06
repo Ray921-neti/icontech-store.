@@ -59,16 +59,16 @@ export const ProductModal: React.FC<ProductModalProps> = ({
           <div className="space-y-3">
             <div className="relative aspect-square rounded-2xl overflow-hidden bg-gray-100 border border-gray-200">
               <img
-                src={images[activeImageIndex] || images[0] || `/images/categories/${product.category}.svg`}
+                src={images[activeImageIndex] || images[0] || `/images/categories/${product.category}.jpg`}
                 alt={product.name}
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = `/images/categories/${product.category}.svg`;
+                  (e.target as HTMLImageElement).src = `/images/categories/${product.category}.jpg`;
                 }}
                 className="w-full h-full object-cover"
               />
               {discount > 0 && (
-                <span className="absolute top-3 left-3 bg-red-600 text-white font-black text-xs px-2.5 py-1 rounded-md shadow-sm">
-                  SAVE {discount}%
+                <span className="absolute top-3 left-3 bg-[#FF7900] text-white font-black text-xs px-2.5 py-1 rounded-md shadow-sm">
+                  -{discount}%
                 </span>
               )}
             </div>
@@ -211,8 +211,8 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                 </div>
 
                 <div className="text-right">
-                  <span className="text-[11px] text-gray-500 block">Total Price:</span>
-                  <span className="text-base font-black text-orange-600">
+                  <span className="text-[11px] text-[#718096] block">Total Price:</span>
+                  <span className="text-base font-black text-[#075CE5]">
                     {formatNaira(product.price * quantity)}
                   </span>
                 </div>
@@ -225,7 +225,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                     onClose();
                   }}
                   disabled={!product.inStock || product.stock === 0}
-                  className="py-3 px-4 rounded-xl bg-orange-100 hover:bg-orange-200 text-orange-700 font-bold text-xs sm:text-sm transition flex items-center justify-center border border-orange-200"
+                  className="py-3 px-4 rounded-xl bg-[#075CE5] hover:bg-[#064ec4] text-white font-bold text-xs sm:text-sm transition flex items-center justify-center shadow-sm cursor-pointer disabled:bg-gray-300"
                 >
                   <ShoppingCart className="w-4 h-4 mr-2" />
                   Add to Cart
@@ -237,7 +237,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                     onClose();
                   }}
                   disabled={!product.inStock || product.stock === 0}
-                  className="py-3 px-4 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs sm:text-sm transition flex items-center justify-center shadow-md"
+                  className="py-3 px-4 rounded-xl bg-[#FF7900] hover:bg-[#e06b00] text-white font-bold text-xs sm:text-sm transition flex items-center justify-center shadow-md cursor-pointer disabled:bg-gray-300"
                 >
                   Buy Now (Checkout)
                 </button>

@@ -133,9 +133,9 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       {/* Top Profile Header Banner */}
-      <div className="bg-linear-to-r from-slate-950 via-slate-900 to-orange-950 rounded-3xl p-6 sm:p-8 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      <div className="bg-[#082B62] rounded-3xl p-6 sm:p-8 text-white shadow-md border border-[#E5ECF5] flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="flex items-center space-x-4">
-          <div className="w-16 h-16 rounded-2xl bg-orange-600 flex items-center justify-center font-black text-2xl text-white shadow-lg border-2 border-white/20">
+          <div className="w-16 h-16 rounded-2xl bg-[#FF7900] flex items-center justify-center font-black text-2xl text-white shadow-md border-2 border-white/20">
             {customerProfile.name.charAt(0).toUpperCase()}
           </div>
           <div>
@@ -147,11 +147,11 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
                 Active Customer
               </span>
             </div>
-            <p className="text-xs text-orange-200 mt-0.5 flex items-center">
+            <p className="text-xs text-[#DCEBFF] mt-0.5 flex items-center">
               <Phone className="w-3.5 h-3.5 mr-1" />
               {customerProfile.phone}
             </p>
-            <p className="text-[11px] text-gray-400 mt-0.5">
+            <p className="text-[11px] text-[#DCEBFF]/70 mt-0.5">
               Member since: {formatDate(customerProfile.createdAt)}
             </p>
           </div>
@@ -159,7 +159,7 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
 
         <button
           onClick={handleSignOutClick}
-          className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-red-600/90 text-white font-bold text-xs transition border border-white/20 flex items-center space-x-2"
+          className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-red-600/90 text-white font-bold text-xs transition border border-white/20 flex items-center space-x-2 cursor-pointer"
         >
           <LogOut className="w-4 h-4" />
           <span>Sign Out</span>
@@ -181,13 +181,13 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
       )}
 
       {/* Account Navigation Tabs */}
-      <div className="flex items-center space-x-2 border-b border-gray-200 pb-2 text-xs font-bold overflow-x-auto no-scrollbar">
+      <div className="flex items-center space-x-2 border-b border-[#E5ECF5] pb-2 text-xs font-bold overflow-x-auto no-scrollbar">
         <button
           onClick={() => setActiveSubTab('profile')}
-          className={`px-4 py-2 rounded-xl transition flex items-center space-x-2 shrink-0 ${
+          className={`px-4 py-2 rounded-xl transition flex items-center space-x-2 shrink-0 cursor-pointer ${
             activeSubTab === 'profile'
-              ? 'bg-orange-600 text-white shadow-sm'
-              : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+              ? 'bg-[#075CE5] text-white shadow-sm'
+              : 'bg-white text-[#10264D] hover:bg-[#F3F7FC] border border-[#E5ECF5]'
           }`}
         >
           <User className="w-4 h-4" />
@@ -196,10 +196,10 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
 
         <button
           onClick={() => setActiveSubTab('orders')}
-          className={`px-4 py-2 rounded-xl transition flex items-center space-x-2 shrink-0 ${
+          className={`px-4 py-2 rounded-xl transition flex items-center space-x-2 shrink-0 cursor-pointer ${
             activeSubTab === 'orders'
-              ? 'bg-orange-600 text-white shadow-sm'
-              : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+              ? 'bg-[#075CE5] text-white shadow-sm'
+              : 'bg-white text-[#10264D] hover:bg-[#F3F7FC] border border-[#E5ECF5]'
           }`}
         >
           <ShoppingBag className="w-4 h-4" />
@@ -208,10 +208,10 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
 
         <button
           onClick={() => setActiveSubTab('repairs')}
-          className={`px-4 py-2 rounded-xl transition flex items-center space-x-2 shrink-0 ${
+          className={`px-4 py-2 rounded-xl transition flex items-center space-x-2 shrink-0 cursor-pointer ${
             activeSubTab === 'repairs'
-              ? 'bg-orange-600 text-white shadow-sm'
-              : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+              ? 'bg-[#075CE5] text-white shadow-sm'
+              : 'bg-white text-[#10264D] hover:bg-[#F3F7FC] border border-[#E5ECF5]'
           }`}
         >
           <Wrench className="w-4 h-4" />

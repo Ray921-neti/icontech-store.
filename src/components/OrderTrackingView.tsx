@@ -92,31 +92,31 @@ export const OrderTrackingView: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Title */}
-      <div className="bg-slate-900 rounded-2xl p-6 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="bg-[#082B62] rounded-3xl p-6 sm:p-8 text-white shadow-md border border-[#E5ECF5] flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <span className="text-xs uppercase font-black tracking-widest text-orange-400 block mb-1">
+          <span className="text-xs uppercase font-black tracking-widest text-[#FF7900] block mb-1">
             Order Fulfillment Status
           </span>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
             Track Your Gadget Purchase
           </h1>
-          <p className="text-xs text-gray-300 mt-1 max-w-lg">
+          <p className="text-xs text-[#DCEBFF] mt-1 max-w-lg">
             Check real-time dispatch and store-pickup availability for your smartphones, laptops, and accessories.
           </p>
         </div>
-        <div className="bg-slate-800/80 px-4 py-2.5 rounded-xl border border-slate-700 text-xs">
-          <span className="text-gray-400 block">Dispatch Department:</span>
-          <a href={`tel:${STORE_PHONE}`} className="font-bold text-orange-400 text-sm hover:underline block">
+        <div className="bg-white/10 px-4 py-2.5 rounded-xl border border-white/20 text-xs">
+          <span className="text-[#DCEBFF] block">Dispatch Department:</span>
+          <a href={`tel:${STORE_PHONE}`} className="font-bold text-[#FF7900] text-sm hover:underline block">
             📞 {STORE_PHONE}
           </a>
         </div>
       </div>
 
       {/* Search Bar */}
-      <div className="bg-white rounded-2xl border border-gray-200 p-5 sm:p-6 shadow-md">
+      <div className="bg-white rounded-2xl border border-[#E5ECF5] p-5 sm:p-6 shadow-xs">
         <form onSubmit={handleSearch} className="grid grid-cols-1 sm:grid-cols-12 gap-3">
           <div className="sm:col-span-6">
-            <label className="block text-xs font-bold text-gray-700 mb-1">
+            <label className="block text-xs font-bold text-[#10264D] mb-1">
               Order Reference Number <span className="text-red-500">*</span>
             </label>
             <input
@@ -125,20 +125,20 @@ export const OrderTrackingView: React.FC = () => {
               placeholder="e.g. ICON-ORD-10492"
               value={orderIdInput}
               onChange={(e) => setOrderIdInput(e.target.value)}
-              className="w-full px-3.5 py-2.5 text-xs sm:text-sm font-mono uppercase font-bold border border-gray-300 rounded-xl focus:border-orange-500 focus:outline-hidden"
+              className="w-full px-3.5 py-2.5 text-xs sm:text-sm font-mono uppercase font-bold border border-[#E5ECF5] rounded-xl focus:border-[#075CE5] focus:outline-hidden"
             />
           </div>
 
           <div className="sm:col-span-4">
-            <label className="block text-xs font-bold text-gray-700 mb-1">
-              Customer Phone <span className="text-gray-400 font-normal">(Optional verify)</span>
+            <label className="block text-xs font-bold text-[#10264D] mb-1">
+              Customer Phone <span className="text-[#718096] font-normal">(Optional verify)</span>
             </label>
             <input
               type="tel"
               placeholder="e.g. 080..."
               value={phoneInput}
               onChange={(e) => setPhoneInput(e.target.value)}
-              className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-gray-300 rounded-xl focus:border-orange-500 focus:outline-hidden"
+              className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-[#E5ECF5] rounded-xl focus:border-[#075CE5] focus:outline-hidden"
             />
           </div>
 
@@ -146,7 +146,7 @@ export const OrderTrackingView: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-2.5 px-4 bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs sm:text-sm rounded-xl transition shadow-md flex items-center justify-center disabled:bg-gray-400"
+              className="w-full py-2.5 px-4 bg-[#075CE5] hover:bg-[#064ec4] text-white font-bold text-xs sm:text-sm rounded-xl transition shadow-sm flex items-center justify-center disabled:bg-gray-400 cursor-pointer"
             >
               <Search className="w-4 h-4 mr-1" />
               <span>{isLoading ? '...' : 'Track'}</span>
