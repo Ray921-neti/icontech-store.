@@ -224,13 +224,10 @@ export const Footer: React.FC<FooterProps> = ({
           </div>
 
           <div className="pt-3">
-            <button
-              onClick={onOpenAdmin}
-              className="text-xs text-[#FF7900] hover:text-orange-300 font-bold flex items-center cursor-pointer"
-            >
-              <ShieldCheck className="w-3.5 h-3.5 mr-1" />
-              Staff / Admin Portal
-            </button>
+            <span className="inline-flex items-center text-[11px] text-[#DCEBFF]/60 font-medium">
+              <ShieldCheck className="w-3.5 h-3.5 mr-1 text-[#FF7900]" />
+              Official Verified Electronics Hub
+            </span>
           </div>
         </div>
       </div>

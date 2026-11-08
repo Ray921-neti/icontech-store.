@@ -134,8 +134,75 @@ export interface AdminUser {
   uid: string;
   email: string;
   name: string;
-  role: 'super_admin' | 'technician' | 'sales_manager';
+  role: 'super_admin';
   createdAt?: string;
+}
+
+export type ApprovalType = 
+  | 'product_publish'
+  | 'price_change'
+  | 'discount_change'
+  | 'product_delete'
+  | 'stock_adjustment'
+  | 'order_confirmation'
+  | 'payment_verification'
+  | 'order_cancellation'
+  | 'order_refund'
+  | 'repair_quote'
+  | 'repair_extra_work'
+  | 'settings_change';
+
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
+
+export interface ApprovalRequest {
+  id: string;
+  type: ApprovalType;
+  title: string;
+  description: string;
+  targetCollection: 'products' | 'orders' | 'repairs' | 'business_settings';
+  targetDocId: string;
+  requestedBy: string;
+  requestedByName?: string;
+  requestedAt: string;
+  currentValues?: Record<string, any>;
+  proposedChanges: Record<string, any>;
+  status: ApprovalStatus;
+  reviewedAt?: string;
+  reviewedBy?: string;
+  notes?: string;
+  rejectionReason?: string;
+}
+
+export interface ActivityLog {
+  id: string;
+  timestamp: string;
+  actorEmail: string;
+  actorRole: string;
+  action: string;
+  entityType: 'order' | 'repair' | 'product' | 'settings' | 'auth' | 'approval' | 'system';
+  entityId?: string;
+  details: string;
+  metadata?: Record<string, any>;
+}
+
+export interface BusinessSettings {
+  id: string; // 'primary'
+  storeName: string;
+  contactPhone: string;
+  whatsappNumber: string;
+  storeEmail: string;
+  businessAddress: string;
+  businessHours: string;
+  bankName: string;
+  accountName: string;
+  accountNumber: string;
+  bankNotes?: string;
+  deliveryFeeStandard: number;
+  freeDeliveryThreshold: number;
+  repairWarrantyDays: number;
+  maintenanceMode: boolean;
+  updatedAt: string;
+  updatedBy: string;
 }
 
 export interface CategoryItem {

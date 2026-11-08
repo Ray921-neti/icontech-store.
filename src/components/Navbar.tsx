@@ -136,16 +136,20 @@ export const Navbar: React.FC<NavbarProps> = ({
               Repair Status
             </button>
 
-            {/* Subtle Staff / Admin badge button */}
-            <span className="text-white/30 hidden sm:inline">|</span>
-            <button
-              onClick={onOpenAdmin}
-              className="hidden sm:inline-flex items-center px-2 py-0.5 rounded bg-[#0b3b85] hover:bg-[#075CE5] text-[#DCEBFF] hover:text-white text-[10px] transition cursor-pointer"
-              title="Authorized Personnel Access"
-            >
-              <ShieldCheck className="w-3 h-3 mr-1 text-amber-300" />
-              <span>{isAdmin ? 'Admin' : 'Staff'}</span>
-            </button>
+            {/* Super Admin badge shortcut - strictly visible ONLY when authenticated as Super Admin */}
+            {isAdmin && (
+              <>
+                <span className="text-white/30 hidden sm:inline">|</span>
+                <button
+                  onClick={onOpenAdmin}
+                  className="hidden sm:inline-flex items-center px-2 py-0.5 rounded bg-[#FF7900] hover:bg-[#e66c00] text-white text-[10px] font-bold transition cursor-pointer"
+                  title="Super Admin Dashboard"
+                >
+                  <ShieldCheck className="w-3 h-3 mr-1 text-white" />
+                  <span>Admin Hub</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>

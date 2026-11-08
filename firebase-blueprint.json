@@ -108,6 +108,81 @@
         "createdAt": { "type": "string", "description": "Creation timestamp" }
       },
       "required": ["email", "role"]
+    },
+    "ApprovalRequest": {
+      "title": "ApprovalRequest",
+      "description": "Sensitive business change requests requiring personal approval by the Super Administrator.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique approval request ID" },
+        "type": {
+          "type": "string",
+          "description": "Type of approval",
+          "enum": [
+            "product_publish", "price_change", "discount_change", "product_delete",
+            "stock_adjustment", "order_confirmation", "payment_verification",
+            "order_cancellation", "order_refund", "repair_quote", "repair_extra_work",
+            "settings_change"
+          ]
+        },
+        "title": { "type": "string", "description": "Short summary title" },
+        "description": { "type": "string", "description": "Detailed explanation of change" },
+        "targetCollection": { "type": "string", "description": "Collection impacted" },
+        "targetDocId": { "type": "string", "description": "Document ID impacted" },
+        "requestedBy": { "type": "string", "description": "UID or identifier of requester" },
+        "requestedByName": { "type": "string", "description": "Display name of requester" },
+        "requestedAt": { "type": "string", "description": "ISO timestamp" },
+        "currentValues": { "type": "object", "description": "Current snapshot before change" },
+        "proposedChanges": { "type": "object", "description": "Proposed changes to apply on approval" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "reviewedAt": { "type": "string", "description": "ISO timestamp of review" },
+        "reviewedBy": { "type": "string", "description": "Reviewer identity" },
+        "notes": { "type": "string", "description": "Admin review notes" },
+        "rejectionReason": { "type": "string", "description": "Reason if rejected" }
+      },
+      "required": ["id", "type", "title", "targetCollection", "targetDocId", "requestedBy", "requestedAt", "proposedChanges", "status"]
+    },
+    "ActivityLog": {
+      "title": "ActivityLog",
+      "description": "Immutable security and audit trail recording sensitive business events and administrative actions.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique log entry ID" },
+        "timestamp": { "type": "string", "description": "ISO timestamp of occurrence" },
+        "actorEmail": { "type": "string", "description": "Actor email address" },
+        "actorRole": { "type": "string", "description": "Role of the actor" },
+        "action": { "type": "string", "description": "Action performed code" },
+        "entityType": { "type": "string", "description": "Type of entity affected" },
+        "entityId": { "type": "string", "description": "ID of affected entity" },
+        "details": { "type": "string", "description": "Human-readable description of event" },
+        "metadata": { "type": "object", "description": "Optional arbitrary metadata payload" }
+      },
+      "required": ["id", "timestamp", "actorEmail", "action", "details"]
+    },
+    "BusinessSettings": {
+      "title": "BusinessSettings",
+      "description": "Configurable store parameters, contact numbers, bank accounts, and operational policies.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Settings record identifier e.g. primary" },
+        "storeName": { "type": "string", "description": "Store branding name" },
+        "contactPhone": { "type": "string", "description": "Direct customer service phone" },
+        "whatsappNumber": { "type": "string", "description": "Official WhatsApp number" },
+        "storeEmail": { "type": "string", "description": "Official store email" },
+        "businessAddress": { "type": "string", "description": "Physical store address in Ondo" },
+        "businessHours": { "type": "string", "description": "Store opening hours" },
+        "bankName": { "type": "string", "description": "Bank name for direct transfers" },
+        "accountName": { "type": "string", "description": "Bank account recipient name" },
+        "accountNumber": { "type": "string", "description": "NUBAN account number" },
+        "bankNotes": { "type": "string", "description": "Instructions for bank payment verification" },
+        "deliveryFeeStandard": { "type": "number", "description": "Default delivery fee in Naira" },
+        "freeDeliveryThreshold": { "type": "number", "description": "Order amount qualifying for free delivery" },
+        "repairWarrantyDays": { "type": "number", "description": "Days of repair warranty" },
+        "maintenanceMode": { "type": "boolean", "description": "Maintenance switch flag" },
+        "updatedAt": { "type": "string", "description": "Last update ISO timestamp" },
+        "updatedBy": { "type": "string", "description": "Super admin who updated" }
+      },
+      "required": ["id", "storeName", "contactPhone", "whatsappNumber", "bankName", "accountName", "accountNumber"]
     }
   },
   "firestore": {
@@ -130,6 +205,18 @@
     "/admins/{adminId}": {
       "schema": { "$ref": "#/entities/AdminUser" },
       "description": "Authorized administrators record."
+    },
+    "/approvals/{approvalId}": {
+      "schema": { "$ref": "#/entities/ApprovalRequest" },
+      "description": "Business approval requests requiring Super Administrator sign-off."
+    },
+    "/activity_logs/{logId}": {
+      "schema": { "$ref": "#/entities/ActivityLog" },
+      "description": "Immutable security and audit log stream."
+    },
+    "/business_settings/{settingId}": {
+      "schema": { "$ref": "#/entities/BusinessSettings" },
+      "description": "Store-wide operational configuration and banking parameters."
     }
   }
 }

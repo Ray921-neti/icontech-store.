@@ -27,12 +27,9 @@ service cloud.firestore {
         request.auth.token.email_verified == true;
     }
 
-    // Operational staff or primary administrator
+    // Sole Super Administrator enforcement (no secondary staff accounts or customer elevation)
     function isStaffAdmin() {
-      return isSignedIn() && (
-        isPrimaryAdmin() ||
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
-      );
+      return isPrimaryAdmin();
     }
 
     // 1. Products catalog: Publicly viewable, operational staff / admin manageable
@@ -172,15 +169,59 @@ service cloud.firestore {
 
     // 5. Admins registry: only primary administrator can manage authorized identities
     match /admins/{adminId} {
-      allow read: if isStaffAdmin() && isValidId(adminId);
+      allow read: if isPrimaryAdmin() && isValidId(adminId);
       allow create, update, delete: if isPrimaryAdmin() && 
         isValidId(adminId) &&
         (request.method == 'delete' || (
           request.resource.data.keys().hasOnly(['uid', 'email', 'name', 'role', 'createdAt', 'updatedAt']) &&
           request.resource.data.uid == adminId &&
           request.resource.data.email is string &&
-          request.resource.data.role in ['super_admin', 'technician', 'sales_manager']
+          request.resource.data.role in ['super_admin']
         ));
+    }
+
+    // 6. Business Approval Requests: Super Administrator personal sign-off queue
+    match /approvals/{approvalId} {
+      allow get, list: if isPrimaryAdmin() && isValidId(approvalId);
+      
+      // Super Admin can create any approval request.
+      // Customers can ONLY create approval requests for their own orders and repair bookings.
+      // Customers are strictly forbidden from creating administrative requests (pricing, products, stock, settings, cancellations).
+      allow create: if isValidId(approvalId) && (
+        isPrimaryAdmin() || (
+          isSignedIn() &&
+          request.resource.data.id == approvalId &&
+          request.resource.data.status == 'pending' &&
+          request.resource.data.requestedBy == request.auth.uid &&
+          (
+            (request.resource.data.type in ['order_confirmation', 'payment_verification'] && request.resource.data.targetCollection == 'orders') ||
+            (request.resource.data.type in ['repair_quote'] && request.resource.data.targetCollection == 'repairs')
+          ) &&
+          !('reviewedAt' in request.resource.data) &&
+          !('reviewedBy' in request.resource.data) &&
+          !('rejectionReason' in request.resource.data)
+        )
+      );
+
+      // Only Super Admin can approve, reject, execute, modify, or delete approval requests
+      allow update, delete: if isPrimaryAdmin() && isValidId(approvalId);
+    }
+
+    // 7. Activity & Security Logs: Immutable audit log stream accessible only to Super Admin
+    match /activity_logs/{logId} {
+      allow get, list: if isPrimaryAdmin() && isValidId(logId);
+      allow create: if isPrimaryAdmin() && isValidId(logId) &&
+        request.resource.data.id == logId &&
+        request.resource.data.timestamp is string &&
+        request.resource.data.actorEmail is string &&
+        request.resource.data.action is string;
+      allow update, delete: if false; // strictly immutable audit trail
+    }
+
+    // 8. Business Settings: Publicly readable store details; editable exclusively by Super Admin
+    match /business_settings/{settingId} {
+      allow get, list: if true;
+      allow write: if isPrimaryAdmin() && isValidId(settingId);
     }
   }
 }

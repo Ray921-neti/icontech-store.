@@ -39,7 +39,6 @@ export const CustomerAuthModal: React.FC<CustomerAuthModalProps> = ({
     resetPassword,
     error: authError, 
     clearError,
-    adminEmail,
     isAdmin 
   } = useAuth();
 
@@ -451,7 +450,7 @@ export const CustomerAuthModal: React.FC<CustomerAuthModalProps> = ({
                     <span>Firestore Security Protected</span>
                   </div>
                   <p className="text-[11px] text-amber-800 leading-relaxed">
-                    Administrative access requires signing in with an authorized Google account (primary manager: <strong>{adminEmail}</strong>).
+                    Authorized Administrator Access Only. Please sign in with your verified ICONTECH administrative Google account.
                   </p>
                 </div>
 

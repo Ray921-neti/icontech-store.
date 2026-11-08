@@ -102,16 +102,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, []);
 
-  // Admin access is strictly separated from customer access
-  // Customers use @customer.icontech.ng and MUST NEVER be granted admin access
-  // Only verified Firebase Authentication identities can acquire admin status
+  // Strictly ONE Super Administrator: only the verified owner account
+  // No customer elevation, no secondary or staff accounts
   const isAdmin = Boolean(
-    isAdminDoc ||
-    (user !== null && user.email && (
-      user.email.toLowerCase() === PRIMARY_ADMIN_EMAIL.toLowerCase() ||
-      (user.email.endsWith('@staff.icontech.ng') && !user.email.includes('@customer.')) ||
-      user.email === 'admin@icontech.ng'
-    ))
+    user !== null && 
+    user.email && 
+    user.email.toLowerCase() === PRIMARY_ADMIN_EMAIL.toLowerCase()
   );
 
   const isCustomer = Boolean(customerProfile !== null);
@@ -324,7 +320,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signInWithGoogle,
         signOutUser,
         clearError,
-        adminEmail: PRIMARY_ADMIN_EMAIL,
+        adminEmail: user?.email ? user.email : 'Authorized Administrator',
       }}
     >
       {children}
