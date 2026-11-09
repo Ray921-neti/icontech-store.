@@ -56,6 +56,7 @@ export async function fetchProducts(): Promise<Product[]> {
     snapshot.forEach((docSnap) => {
       products.push({ id: docSnap.id, ...docSnap.data() } as Product);
     });
+
     return products;
   } catch (error) {
     console.warn('Firestore fetch products failed, falling back to cached catalog:', error);

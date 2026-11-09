@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider, useCart } from './context/CartContext';
 import { Navbar } from './components/Navbar';
@@ -29,6 +29,11 @@ import {
   formatNaira 
 } from './utils/formatters';
 import { 
+  searchAndRankProducts, 
+  createWhatsAppGadgetRequestUrl, 
+  POPULAR_SEARCH_TERMS 
+} from './utils/searchUtils';
+import { 
   Wrench, 
   Sparkles, 
   SlidersHorizontal, 
@@ -40,7 +45,9 @@ import {
   ShieldCheck,
   Zap,
   Phone,
-  ChevronUp
+  ChevronUp,
+  Search,
+  X
 } from 'lucide-react';
 
 function Storefront() {
@@ -169,32 +176,45 @@ function Storefront() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Filtered and Sorted products for the Shop tab
-  const filteredProducts = products.filter((prod) => {
-    const matchesCategory = selectedCategory === 'all' || prod.category === selectedCategory;
-    const matchesSearch =
-      searchQuery === '' ||
-      prod.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      prod.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      prod.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      prod.category.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStock = !onlyInStock || (prod.inStock && prod.stock > 0);
-    const matchesPrice = prod.price <= maxPrice;
+  // Filtered and Sorted products for the Shop tab using multi-token relevance engine
+  const filteredProducts = useMemo(() => {
+    let list = products;
 
-    return matchesCategory && matchesSearch && matchesStock && matchesPrice;
-  }).sort((a, b) => {
-    if (sortBy === 'price-asc') return a.price - b.price;
-    if (sortBy === 'price-desc') return b.price - a.price;
-    if (sortBy === 'rating') return b.rating - a.rating;
-    return (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0);
-  });
+    // 1. Category Filter
+    if (selectedCategory !== 'all') {
+      list = list.filter((prod) => prod.category === selectedCategory);
+    }
+
+    // 2. Stock Filter
+    if (onlyInStock) {
+      list = list.filter((prod) => prod.inStock && prod.stock > 0);
+    }
+
+    // 3. Max Price Filter
+    list = list.filter((prod) => prod.price <= maxPrice);
+
+    // 4. Multi-token, Specification-aware Search & Relevance Ranking
+    if (searchQuery.trim() !== '') {
+      list = searchAndRankProducts(list, searchQuery);
+    } else {
+      // Standard Sort Order when not searching
+      list = [...list].sort((a, b) => {
+        if (sortBy === 'price-asc') return a.price - b.price;
+        if (sortBy === 'price-desc') return b.price - a.price;
+        if (sortBy === 'rating') return b.rating - a.rating;
+        return (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0);
+      });
+    }
+
+    return list;
+  }, [products, selectedCategory, searchQuery, onlyInStock, maxPrice, sortBy]);
 
   const featuredProducts = products.filter((p) => p.isFeatured).slice(0, 8);
   const bestSellers = products.slice().sort((a, b) => b.reviewsCount - a.reviewsCount).slice(0, 4);
 
   return (
     <div className="min-h-screen bg-[#F3F7FC] flex flex-col text-[#10264D] font-sans selection:bg-[#075CE5] selection:text-white">
-      {/* Navigation Bar */}
+      {/* Navigation Bar with Live Jumia-style Search */}
       <Navbar
         activeTab={activeTab}
         setActiveTab={handleTabChange}
@@ -204,6 +224,8 @@ function Storefront() {
         setSelectedCategory={setSelectedCategory}
         onOpenAdmin={() => setIsAdminOpen(true)}
         onOpenCustomerAuth={(mode = 'signin') => setCustomerAuthModal({ isOpen: true, mode })}
+        products={products}
+        onSelectProduct={(p) => setSelectedProduct(p)}
       />
 
       {/* Main Content Area */}
@@ -401,6 +423,32 @@ function Storefront() {
               ))}
             </div>
 
+            {/* Active Search Query Status Bar */}
+            {searchQuery.trim() !== '' && (
+              <div className="bg-[#DCEBFF] border border-[#075CE5]/20 rounded-2xl p-3.5 sm:p-4 flex flex-wrap items-center justify-between gap-3 shadow-2xs">
+                <div className="flex items-center space-x-3 text-xs text-[#082B62]">
+                  <div className="w-8 h-8 rounded-xl bg-[#075CE5] text-white flex items-center justify-center shrink-0 shadow-2xs">
+                    <Search className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-semibold text-[#718096] block">Search Results for:</span>
+                    <span className="text-sm font-black text-[#10264D]">
+                      "{searchQuery}" <span className="text-xs font-bold text-[#075CE5]">({filteredProducts.length} {filteredProducts.length === 1 ? 'product' : 'products'} found)</span>
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="px-3 py-1.5 bg-white hover:bg-[#F3F7FC] text-[#075CE5] border border-[#E5ECF5] text-xs font-bold rounded-xl flex items-center space-x-1.5 transition shadow-2xs cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    <span>Clear Search</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Products Grid */}
             {filteredProducts.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -414,25 +462,72 @@ function Storefront() {
                 ))}
               </div>
             ) : (
-              <div className="bg-white rounded-2xl border border-[#E5ECF5] p-12 text-center space-y-4">
-                <div className="w-16 h-16 rounded-full bg-[#DCEBFF] text-[#075CE5] flex items-center justify-center mx-auto">
-                  <Filter className="w-8 h-8" />
+              <div className="bg-white rounded-3xl border border-[#E5ECF5] p-8 sm:p-12 text-center space-y-6 shadow-xs max-w-2xl mx-auto">
+                <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto border border-amber-200">
+                  <Search className="w-8 h-8" />
                 </div>
-                <div>
-                  <h3 className="font-bold text-[#10264D] text-base">No products found</h3>
-                  <p className="text-xs text-[#718096] mt-1 max-w-sm mx-auto">
-                    We could not find any products matching your current filters. Try resetting the category or search query.
+                
+                <div className="space-y-2">
+                  <h3 className="font-black text-[#10264D] text-lg sm:text-xl">
+                    {searchQuery.trim() ? `No products matching "${searchQuery}"` : 'No products found'}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-[#718096] max-w-md mx-auto leading-relaxed">
+                    {searchQuery.trim()
+                      ? 'We couldn\'t find any gadget matching your keywords in the active catalogue. If you need this specific phone or model, our store in Ondo can source or verify physical stock for you!'
+                      : 'We could not find any products matching your current filters. Try resetting the category or price range.'}
                   </p>
                 </div>
-                <button
-                  onClick={() => {
-                    setSelectedCategory('all');
-                    setSearchQuery('');
-                  }}
-                  className="px-5 py-2 bg-[#075CE5] text-white text-xs font-bold rounded-xl hover:bg-[#064ec4] transition cursor-pointer"
-                >
-                  Reset All Filters
-                </button>
+
+                {/* WhatsApp Gadget Request Button */}
+                {searchQuery.trim() ? (
+                  <div className="space-y-4">
+                    <a
+                      href={createWhatsAppGadgetRequestUrl(searchQuery)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center space-x-2 px-5 py-3 bg-[#25D366] hover:bg-[#20ba5a] text-white font-bold text-xs sm:text-sm rounded-xl shadow-md transition cursor-pointer"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      <span>Request "{searchQuery}" on WhatsApp (Fast Sourcing)</span>
+                    </a>
+
+                    {/* Popular Searches Shortcuts */}
+                    <div className="pt-4 border-t border-[#E5ECF5] space-y-2">
+                      <span className="text-[11px] font-bold text-[#718096] uppercase tracking-wider block">
+                        Popular Searches in Ondo
+                      </span>
+                      <div className="flex flex-wrap gap-1.5 justify-center">
+                        {POPULAR_SEARCH_TERMS.map((term) => (
+                          <button
+                            key={term}
+                            type="button"
+                            onClick={() => {
+                              setSearchQuery(term);
+                              setSelectedCategory('all');
+                            }}
+                            className="text-xs font-semibold bg-[#F3F7FC] hover:bg-[#DCEBFF] hover:text-[#075CE5] text-[#10264D] px-3 py-1.5 rounded-xl border border-[#E5ECF5] transition cursor-pointer"
+                          >
+                            {term}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className="pt-2">
+                  <button
+                    onClick={() => {
+                      setSelectedCategory('all');
+                      setSearchQuery('');
+                      setOnlyInStock(false);
+                      setMaxPrice(2000000);
+                    }}
+                    className="px-5 py-2.5 bg-[#075CE5] text-white text-xs font-bold rounded-xl hover:bg-[#064ec4] transition cursor-pointer shadow-xs"
+                  >
+                    Reset All Filters &amp; View All Products
+                  </button>
+                </div>
               </div>
             )}
           </div>

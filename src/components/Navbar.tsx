@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   Search, 
   ShoppingCart, 
@@ -23,13 +23,21 @@ import {
   Shield,
   Sparkles,
   Grid,
-  Home
+  Home,
+  ArrowRight,
+  MessageCircle,
+  AlertCircle
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { STORE_PHONE, STORE_LOCATION } from '../utils/formatters';
-import { ProductCategory } from '../types';
+import { STORE_PHONE, STORE_LOCATION, formatNaira } from '../utils/formatters';
+import { ProductCategory, Product } from '../types';
 import { CATEGORIES } from '../data/categories';
+import { 
+  searchAndRankProducts, 
+  createWhatsAppGadgetRequestUrl, 
+  POPULAR_SEARCH_TERMS 
+} from '../utils/searchUtils';
 
 interface NavbarProps {
   activeTab: string;
@@ -40,6 +48,8 @@ interface NavbarProps {
   setSelectedCategory: (cat: ProductCategory | 'all') => void;
   onOpenAdmin: () => void;
   onOpenCustomerAuth: (mode?: 'signin' | 'signup') => void;
+  products?: Product[];
+  onSelectProduct?: (product: Product) => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -51,17 +61,248 @@ export const Navbar: React.FC<NavbarProps> = ({
   setSelectedCategory,
   onOpenAdmin,
   onOpenCustomerAuth,
+  products = [],
+  onSelectProduct,
 }) => {
   const { totalItems, setIsCartOpen } = useCart();
   const { isAdmin, customerProfile, customerSignOut, isCustomer } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [categoriesDropdownOpen, setCategoriesDropdownOpen] = useState(false);
 
+  // Live Jumia-style Search State & Dropdown Management
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [isMobileSearchFocused, setIsMobileSearchFocused] = useState(false);
+  const desktopSearchRef = useRef<HTMLDivElement>(null);
+  const mobileSearchRef = useRef<HTMLDivElement>(null);
+
+  // Dismiss suggestions on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (desktopSearchRef.current && !desktopSearchRef.current.contains(e.target as Node)) {
+        setIsSearchFocused(false);
+      }
+      if (mobileSearchRef.current && !mobileSearchRef.current.contains(e.target as Node)) {
+        setIsMobileSearchFocused(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Compute live search ranking against the complete product catalogue
+  const searchResults = useMemo(() => {
+    if (!products || !searchQuery.trim()) return [];
+    return searchAndRankProducts(products, searchQuery);
+  }, [products, searchQuery]);
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSearchFocused(false);
+    setIsMobileSearchFocused(false);
     if (activeTab !== 'shop') {
       setActiveTab('shop');
     }
+  };
+
+  const renderSearchDropdown = (isMobile = false) => {
+    const isVisible = isMobile ? isMobileSearchFocused : isSearchFocused;
+    if (!isVisible) return null;
+
+    const trimmedQuery = searchQuery.trim();
+
+    return (
+      <div 
+        className={`absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl shadow-2xl border border-[#E5ECF5] overflow-hidden z-50 text-left ${
+          isMobile ? 'max-h-[75vh]' : 'max-h-[480px]'
+        } overflow-y-auto`}
+      >
+        {trimmedQuery ? (
+          searchResults.length > 0 ? (
+            <div>
+              {/* Dropdown Header */}
+              <div className="px-3.5 py-2.5 bg-[#F8FAFC] border-b border-[#E5ECF5] flex items-center justify-between">
+                <span className="text-[11px] font-bold text-[#10264D] uppercase tracking-wider">
+                  Products matching "{trimmedQuery}"
+                </span>
+                <span className="text-[10px] font-bold text-[#075CE5] bg-[#DCEBFF] px-2 py-0.5 rounded-full">
+                  {searchResults.length} {searchResults.length === 1 ? 'item' : 'items'}
+                </span>
+              </div>
+
+              {/* Product Result Rows */}
+              <div className="divide-y divide-[#F0F4F8]">
+                {searchResults.slice(0, 6).map((product) => {
+                  const discount = product.originalPrice
+                    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+                    : 0;
+
+                  return (
+                    <div
+                      key={product.id}
+                      onClick={() => {
+                        if (onSelectProduct) {
+                          onSelectProduct(product);
+                        } else {
+                          setActiveTab('shop');
+                        }
+                        setIsSearchFocused(false);
+                        setIsMobileSearchFocused(false);
+                      }}
+                      className="p-2.5 sm:p-3 hover:bg-[#F3F7FC] transition flex items-center space-x-3 cursor-pointer group"
+                    >
+                      <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white rounded-xl border border-[#E5ECF5] p-1 shrink-0 flex items-center justify-center overflow-hidden">
+                        <img
+                          src={product.images[0] || `/images/categories/${product.category}.jpg`}
+                          alt={product.name}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = `/images/categories/${product.category}.jpg`;
+                          }}
+                          className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
+                        />
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-[10px] uppercase font-bold text-[#718096] tracking-wide">
+                            {product.brand}
+                          </span>
+                          {product.badge && (
+                            <span className="text-[9px] bg-[#082B62] text-white px-1.5 py-0.2 rounded font-semibold">
+                              {product.badge}
+                            </span>
+                          )}
+                        </div>
+                        <h4 className="text-xs sm:text-sm font-bold text-[#10264D] truncate group-hover:text-[#075CE5] transition-colors">
+                          {product.name}
+                        </h4>
+                        <div className="flex items-center space-x-2 mt-0.5">
+                          <span className="text-xs font-black text-[#082B62]">
+                            {formatNaira(product.price)}
+                          </span>
+                          {product.originalPrice && product.originalPrice > product.price && (
+                            <span className="text-[10px] text-[#718096] line-through">
+                              {formatNaira(product.originalPrice)}
+                            </span>
+                          )}
+                          {discount > 0 && (
+                            <span className="text-[9px] bg-[#FF7900] text-white font-bold px-1.5 py-0.2 rounded">
+                              -{discount}%
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        {product.inStock && product.stock > 0 ? (
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                            {product.stock <= 5 ? `Only ${product.stock} left` : 'In Stock'}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full border border-red-200">
+                            Out of stock
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* View all in Shop link */}
+              <div className="p-2.5 bg-[#F8FAFC] border-t border-[#E5ECF5]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab('shop');
+                    setIsSearchFocused(false);
+                    setIsMobileSearchFocused(false);
+                  }}
+                  className="w-full py-2 px-3 bg-[#075CE5] hover:bg-[#064ec4] text-white text-xs font-bold rounded-xl flex items-center justify-center space-x-1.5 transition cursor-pointer shadow-xs"
+                >
+                  <span>View all {searchResults.length} results in Shop</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* No Results Found State */
+            <div className="p-4 sm:p-5 text-center space-y-3">
+              <div className="w-11 h-11 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mx-auto border border-amber-200">
+                <AlertCircle className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-xs sm:text-sm font-bold text-[#10264D]">
+                  No products found for "{trimmedQuery}"
+                </h4>
+                <p className="text-[11px] text-[#718096] max-w-xs mx-auto">
+                  We don't currently have this exact model displayed, but our team can source or check physical stock in Ondo for you immediately!
+                </p>
+              </div>
+
+              {/* WhatsApp Gadget Request Button */}
+              <a
+                href={createWhatsAppGadgetRequestUrl(trimmedQuery)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center space-x-2 px-4 py-2 bg-[#25D366] hover:bg-[#20ba5a] text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span>Request "{trimmedQuery}" on WhatsApp</span>
+              </a>
+
+              {/* Quick suggestions */}
+              <div className="pt-2.5 border-t border-[#E5ECF5] text-left">
+                <span className="text-[10px] uppercase font-bold text-[#718096] block mb-1.5">
+                  Popular Searches
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {POPULAR_SEARCH_TERMS.slice(0, 5).map((term) => (
+                    <button
+                      key={term}
+                      type="button"
+                      onClick={() => {
+                        setSearchQuery(term);
+                        if (activeTab !== 'shop') setActiveTab('shop');
+                      }}
+                      className="text-[11px] font-medium bg-[#F3F7FC] hover:bg-[#DCEBFF] hover:text-[#075CE5] text-[#10264D] px-2.5 py-1 rounded-lg transition border border-[#E5ECF5] cursor-pointer"
+                    >
+                      {term}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )
+        ) : (
+          /* Empty Search Box: Popular Searches Shortcut */
+          <div className="p-3 sm:p-4 space-y-2">
+            <div className="flex items-center justify-between text-[#718096]">
+              <span className="text-[10px] uppercase font-bold tracking-wider">
+                Popular Searches at ICONTECH
+              </span>
+              <Sparkles className="w-3.5 h-3.5 text-[#FF7900]" />
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {POPULAR_SEARCH_TERMS.map((term) => (
+                <button
+                  key={term}
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery(term);
+                    if (activeTab !== 'shop') setActiveTab('shop');
+                    setIsSearchFocused(false);
+                    setIsMobileSearchFocused(false);
+                  }}
+                  className="text-[11px] font-medium bg-[#F3F7FC] hover:bg-[#DCEBFF] hover:text-[#075CE5] text-[#10264D] px-2.5 py-1 rounded-lg transition border border-[#E5ECF5] cursor-pointer"
+                >
+                  {term}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
   };
 
   const handleSignOut = async () => {
@@ -175,28 +416,53 @@ export const Navbar: React.FC<NavbarProps> = ({
             </span>
           </button>
 
-          {/* Large Center Search Bar */}
-          <form 
-            onSubmit={handleSearchSubmit} 
-            className="hidden md:flex flex-1 max-w-2xl relative"
-          >
-            <div className="relative w-full">
-              <input
-                type="text"
-                placeholder="Search for gadgets, phones, accessories..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-11 pr-24 py-2.5 rounded-full border border-[#E5ECF5] bg-[#F3F7FC] text-[#10264D] text-xs sm:text-sm focus:bg-white focus:border-[#075CE5] focus:ring-2 focus:ring-[#DCEBFF] focus:outline-hidden transition placeholder:text-[#718096]"
-              />
-              <Search className="w-4 h-4 text-[#718096] absolute left-4 top-3.5" />
-              <button
-                type="submit"
-                className="absolute right-1.5 top-1 bottom-1 px-5 bg-[#075CE5] hover:bg-[#064ec7] text-white font-bold text-xs rounded-full transition shadow-xs cursor-pointer flex items-center justify-center"
-              >
-                Search
-              </button>
-            </div>
-          </form>
+          {/* Large Center Search Bar with Live Suggestions */}
+          <div ref={desktopSearchRef} className="hidden md:flex flex-1 max-w-2xl relative">
+            <form 
+              onSubmit={handleSearchSubmit} 
+              className="w-full relative"
+            >
+              <div className="relative w-full">
+                <input
+                  type="text"
+                  placeholder="Search for phones, laptops, AirPods, power banks (e.g. iPhone 13, A15, Camon 30)..."
+                  value={searchQuery}
+                  onFocus={() => setIsSearchFocused(true)}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setIsSearchFocused(true);
+                  }}
+                  className="w-full pl-11 pr-28 py-2.5 rounded-full border border-[#E5ECF5] bg-[#F3F7FC] text-[#10264D] text-xs sm:text-sm focus:bg-white focus:border-[#075CE5] focus:ring-2 focus:ring-[#DCEBFF] focus:outline-hidden transition placeholder:text-[#718096]"
+                />
+                <Search className="w-4 h-4 text-[#718096] absolute left-4 top-3.5" />
+                
+                {/* Clear search text button */}
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery('');
+                      setIsSearchFocused(true);
+                    }}
+                    className="absolute right-22 top-2.5 p-1 text-[#718096] hover:text-[#10264D] transition cursor-pointer"
+                    aria-label="Clear search query"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+
+                <button
+                  type="submit"
+                  className="absolute right-1.5 top-1 bottom-1 px-5 bg-[#075CE5] hover:bg-[#064ec7] text-white font-bold text-xs rounded-full transition shadow-xs cursor-pointer flex items-center justify-center"
+                >
+                  Search
+                </button>
+              </div>
+            </form>
+
+            {/* Live Search Suggestions Dropdown (Desktop) */}
+            {renderSearchDropdown(false)}
+          </div>
 
           {/* Right Controls: Account & Shopping Cart */}
           <div className="flex items-center space-x-4 sm:space-x-6 shrink-0">
@@ -273,24 +539,49 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Mobile Search Bar Row (When on small screens) */}
-        <form onSubmit={handleSearchSubmit} className="mt-2.5 md:hidden">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search gadgets, phones, accessories..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-20 py-2 rounded-full border border-[#E5ECF5] bg-[#F3F7FC] text-[#10264D] text-xs focus:outline-hidden focus:border-[#075CE5]"
-            />
-            <Search className="w-4 h-4 text-[#718096] absolute left-3 top-2.5" />
-            <button
-              type="submit"
-              className="absolute right-1 top-1 bottom-1 px-4 bg-[#075CE5] text-white text-xs rounded-full font-bold"
-            >
-              Search
-            </button>
-          </div>
-        </form>
+        <div ref={mobileSearchRef} className="mt-2.5 md:hidden relative">
+          <form onSubmit={handleSearchSubmit}>
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search phones, brands, gadgets..."
+                value={searchQuery}
+                onFocus={() => setIsMobileSearchFocused(true)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setIsMobileSearchFocused(true);
+                }}
+                className="w-full pl-9 pr-24 py-2 rounded-full border border-[#E5ECF5] bg-[#F3F7FC] text-[#10264D] text-xs focus:outline-hidden focus:border-[#075CE5]"
+              />
+              <Search className="w-4 h-4 text-[#718096] absolute left-3 top-2.5" />
+              
+              {/* Clear button on mobile */}
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setIsMobileSearchFocused(true);
+                  }}
+                  className="absolute right-18 top-1.5 p-1 text-[#718096] hover:text-[#10264D] transition"
+                  aria-label="Clear mobile search"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+
+              <button
+                type="submit"
+                className="absolute right-1 top-1 bottom-1 px-4 bg-[#075CE5] text-white text-xs rounded-full font-bold"
+              >
+                Search
+              </button>
+            </div>
+          </form>
+
+          {/* Live Search Suggestions Dropdown (Mobile) */}
+          {renderSearchDropdown(true)}
+        </div>
       </div>
 
       {/* 3. NAVIGATION BAR (Deep Navy Blue #082B62) */}
