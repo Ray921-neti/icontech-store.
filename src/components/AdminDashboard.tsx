@@ -83,7 +83,16 @@ interface AdminDashboardProps {
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
-  const { user, isAdmin, isLoading: authLoading, signInWithGoogle, signOutUser } = useAuth();
+  const { 
+    user, 
+    isAdmin, 
+    isLoading: authLoading, 
+    signInWithGoogle, 
+    signInWithGoogleRedirect, 
+    signOutUser,
+    error: authError,
+    clearError
+  } = useAuth();
 
   // 11 Core Dashboard Sections
   type DashboardTab = 
@@ -101,6 +110,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
 
   const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [isSigningIn, setIsSigningIn] = useState(false);
+  const [copiedDomain, setCopiedDomain] = useState(false);
+
+  useEffect(() => {
+    if (authError) {
+      setLoginError(authError);
+    }
+  }, [authError]);
+
+  const handleAdminGoogleSignIn = async (useRedirect = false) => {
+    setLoginError(null);
+    clearError();
+    setIsSigningIn(true);
+    try {
+      if (useRedirect) {
+        await signInWithGoogleRedirect();
+      } else {
+        await signInWithGoogle();
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Google authentication failed';
+      setLoginError(msg);
+    } finally {
+      setIsSigningIn(false);
+    }
+  };
 
   // Data states
   const [products, setProducts] = useState<Product[]>([]);
@@ -602,10 +637,44 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
           </div>
 
           {loginError && (
-            <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs flex items-center">
-              <AlertTriangle className="w-4 h-4 mr-2 shrink-0 text-red-600" />
-              <span>{loginError}</span>
-            </div>
+            loginError.includes('unauthorized-domain') ? (
+              <div className="p-4 bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl text-xs space-y-2.5 text-left">
+                <div className="flex items-center space-x-2 font-bold text-amber-900">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>Firebase Domain Authorization Required</span>
+                </div>
+                <p className="text-[11px] text-amber-800 leading-relaxed">
+                  Firebase Authentication requires your hosting domain (<strong className="font-semibold">icontech-store.vercel.app</strong>) to be added to Authorized Domains before Google login can proceed.
+                </p>
+                <div className="p-2.5 bg-white border border-amber-200 rounded-xl flex items-center justify-between text-[11px]">
+                  <code className="text-[#082B62] font-mono select-all">icontech-store.vercel.app</code>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText('icontech-store.vercel.app');
+                      setCopiedDomain(true);
+                      setTimeout(() => setCopiedDomain(false), 2000);
+                    }}
+                    className="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded font-medium text-[10px] cursor-pointer"
+                  >
+                    {copiedDomain ? 'Copied!' : 'Copy Domain'}
+                  </button>
+                </div>
+                <div className="text-[10px] text-amber-800 space-y-1">
+                  <div className="font-bold">Required 3-Step Setup:</div>
+                  <ol className="list-decimal pl-4 space-y-0.5">
+                    <li>Go to <strong className="font-medium">Firebase Console</strong> &gt; Project <strong className="font-medium">gen-lang-client-0571688528</strong></li>
+                    <li>Click <strong className="font-medium">Authentication</strong> &gt; <strong className="font-medium">Settings</strong> &gt; <strong className="font-medium">Authorized domains</strong></li>
+                    <li>Click <strong className="font-medium">Add domain</strong> and paste <strong className="font-medium">icontech-store.vercel.app</strong></li>
+                  </ol>
+                </div>
+              </div>
+            ) : (
+              <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs flex items-center text-left">
+                <AlertTriangle className="w-4 h-4 mr-2 shrink-0 text-red-600" />
+                <span>{loginError}</span>
+              </div>
+            )
           )}
 
           {/* Firebase Authorized Admin Sign In */}
@@ -639,31 +708,44 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                   </p>
                 </div>
 
-                <button
-                  onClick={signInWithGoogle}
-                  disabled={authLoading}
-                  className="w-full py-3.5 px-4 rounded-xl border border-[#E5ECF5] hover:bg-[#F3F7FC] text-[#10264D] font-bold text-xs sm:text-sm flex items-center justify-center space-x-2.5 transition shadow-xs bg-white cursor-pointer"
-                >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24">
-                    <path
-                      fill="#4285F4"
-                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                    />
-                    <path
-                      fill="#34A853"
-                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                    />
-                    <path
-                      fill="#EA4335"
-                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                    />
-                  </svg>
-                  <span>Sign in with Google Admin</span>
-                </button>
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => handleAdminGoogleSignIn(false)}
+                    disabled={authLoading || isSigningIn}
+                    className="w-full py-3.5 px-4 rounded-xl border border-[#E5ECF5] hover:bg-[#F3F7FC] text-[#10264D] font-bold text-xs sm:text-sm flex items-center justify-center space-x-2.5 transition shadow-xs bg-white cursor-pointer disabled:opacity-50"
+                  >
+                    <svg className="w-4 h-4" viewBox="0 0 24 24">
+                      <path
+                        fill="#4285F4"
+                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                      />
+                      <path
+                        fill="#34A853"
+                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                      />
+                      <path
+                        fill="#FBBC05"
+                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                      />
+                      <path
+                        fill="#EA4335"
+                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                      />
+                    </svg>
+                    <span>{isSigningIn ? 'Connecting to Google...' : 'Sign in with Google Admin'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleAdminGoogleSignIn(true)}
+                    disabled={authLoading || isSigningIn}
+                    className="w-full py-2.5 px-3 rounded-xl border border-dashed border-[#075CE5]/30 hover:bg-[#075CE5]/5 text-[#075CE5] font-semibold text-xs flex items-center justify-center space-x-2 transition cursor-pointer disabled:opacity-50"
+                  >
+                    <Phone className="w-3.5 h-3.5 shrink-0" />
+                    <span>Sign in with Google (Redirect Mode — for Android / Mobile)</span>
+                  </button>
+                </div>
               </>
             )}
           </div>

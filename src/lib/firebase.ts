@@ -32,6 +32,9 @@ export const db = initializeFirestore(app, {
 // Auth instance
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({
+  prompt: 'select_account',
+});
 
 // Standardized Firestore error handling enum and interface
 export enum OperationType {

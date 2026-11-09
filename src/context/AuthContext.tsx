@@ -3,6 +3,8 @@ import {
   User, 
   onAuthStateChanged, 
   signInWithPopup, 
+  signInWithRedirect,
+  getRedirectResult,
   signOut,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -34,6 +36,7 @@ interface AuthContextType {
   updateCustomerProfileData: (updates: Partial<CustomerProfile>) => Promise<void>;
   resetPassword: (identifier: string) => Promise<string>;
   signInWithGoogle: () => Promise<void>;
+  signInWithGoogleRedirect: () => Promise<void>;
   signOutUser: () => Promise<void>;
   clearError: () => void;
   adminEmail: string;
@@ -63,6 +66,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Sync auth state and load customer profile from Firestore
   useEffect(() => {
+    // Process redirect result if returning from signInWithRedirect (e.g. mobile/Android)
+    getRedirectResult(auth)
+      .then((cred) => {
+        if (cred?.user) {
+          console.log('Successfully completed Google sign-in via redirect:', cred.user.email);
+        }
+      })
+      .catch((err: unknown) => {
+        console.error('Redirect sign-in error:', err);
+        const code = (err as { code?: string })?.code || '';
+        const rawMsg = err instanceof Error ? err.message : 'Google redirect sign-in failed.';
+        let message = rawMsg;
+        if (code === 'auth/unauthorized-domain' || rawMsg.includes('unauthorized-domain')) {
+          message = 'Firebase Error (auth/unauthorized-domain): This domain (icontech-store.vercel.app) is not authorized in Firebase Authentication. Please add "icontech-store.vercel.app" to Firebase Console > Authentication > Settings > Authorized domains.';
+        }
+        setError(message);
+      });
+
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
@@ -274,16 +295,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Admin Google Sign In
+  // Admin Google Sign In (Popup with automatic fallback to redirect on mobile/Android)
   const signInWithGoogle = async () => {
     setError(null);
     try {
       await signInWithPopup(auth, googleProvider);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Google sign-in failed';
+      const code = (err as { code?: string })?.code || '';
+      const rawMsg = err instanceof Error ? err.message : 'Google sign-in failed';
       console.error('Sign-in error:', err);
-      setError(msg);
-      throw err;
+
+      // On Android and mobile browsers, popups are frequently blocked. Automatically attempt redirect.
+      if (
+        code === 'auth/popup-blocked' || 
+        code === 'auth/cancelled-popup-request' ||
+        rawMsg.includes('popup-blocked')
+      ) {
+        console.log('Popup was blocked by the browser. Falling back to redirect mode...');
+        try {
+          await signInWithRedirect(auth, googleProvider);
+          return;
+        } catch (redirectErr) {
+          console.error('Redirect fallback error:', redirectErr);
+        }
+      }
+
+      let message = rawMsg;
+      if (code === 'auth/unauthorized-domain' || rawMsg.includes('unauthorized-domain')) {
+        message = 'Firebase Error (auth/unauthorized-domain): This domain (icontech-store.vercel.app) is not authorized in Firebase Authentication. Please add "icontech-store.vercel.app" to Firebase Console > Authentication > Settings > Authorized domains.';
+      } else if (code === 'auth/popup-blocked') {
+        message = 'The Google login popup was blocked by your browser. Please allow popups or use "Sign in with Google (Redirect Mode)".';
+      } else if (code === 'auth/popup-closed-by-user') {
+        message = 'Sign-in window was closed before completion.';
+      }
+
+      setError(message);
+      throw new Error(message);
+    }
+  };
+
+  // Explicit Direct Redirect Sign In for Android / Mobile
+  const signInWithGoogleRedirect = async () => {
+    setError(null);
+    try {
+      await signInWithRedirect(auth, googleProvider);
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code || '';
+      const rawMsg = err instanceof Error ? err.message : 'Google redirect sign-in failed';
+      let message = rawMsg;
+      if (code === 'auth/unauthorized-domain' || rawMsg.includes('unauthorized-domain')) {
+        message = 'Firebase Error (auth/unauthorized-domain): This domain (icontech-store.vercel.app) is not authorized in Firebase Authentication. Please add "icontech-store.vercel.app" to Firebase Console > Authentication > Settings > Authorized domains.';
+      }
+      setError(message);
+      throw new Error(message);
     }
   };
 
@@ -318,6 +382,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateCustomerProfileData,
         resetPassword,
         signInWithGoogle,
+        signInWithGoogleRedirect,
         signOutUser,
         clearError,
         adminEmail: user?.email ? user.email : 'Authorized Administrator',
