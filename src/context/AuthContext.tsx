@@ -11,7 +11,7 @@ import {
   sendPasswordResetEmail
 } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
-import { auth, db, googleProvider } from '../lib/firebase';
+import { auth, db, googleProvider, createGoogleProvider } from '../lib/firebase';
 import { CustomerProfile } from '../types';
 import { 
   normalizeNigerianPhone, 
@@ -71,6 +71,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .then((cred) => {
         if (cred?.user) {
           console.log('Successfully completed Google sign-in via redirect:', cred.user.email);
+          const email = cred.user.email?.toLowerCase() || '';
+          const redirectTarget = sessionStorage.getItem('icontech_auth_redirect_target');
+          if (email === PRIMARY_ADMIN_EMAIL.toLowerCase() || redirectTarget === 'admin') {
+            sessionStorage.removeItem('icontech_auth_redirect_target');
+            if (window.location.hash !== '#admin') {
+              window.location.hash = '#admin';
+            }
+          }
         }
       })
       .catch((err: unknown) => {
@@ -84,32 +92,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setError(message);
       });
 
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
+      setIsLoading(false); // Unblock immediately so buttons and navigation respond without delay
+
       if (currentUser) {
-        // Verify if user identity is recorded in the Firestore /admins/{uid} registry
-        try {
-          const adminRef = doc(db, 'admins', currentUser.uid);
-          const adminSnap = await getDoc(adminRef);
-          setIsAdminDoc(adminSnap.exists());
-        } catch {
-          setIsAdminDoc(false);
+        // If returning redirect target was set to admin, ensure hash is #admin
+        const email = currentUser.email?.toLowerCase() || '';
+        const redirectTarget = sessionStorage.getItem('icontech_auth_redirect_target');
+        if (email === PRIMARY_ADMIN_EMAIL.toLowerCase() && redirectTarget === 'admin') {
+          sessionStorage.removeItem('icontech_auth_redirect_target');
+          if (window.location.hash !== '#admin') {
+            window.location.hash = '#admin';
+          }
         }
 
-        // Try fetching customer profile for this UID
-        try {
-          const profile = await fetchCustomerProfile(currentUser.uid);
-          if (profile) {
-            setCustomerProfile(profile);
-            try {
-              localStorage.setItem(CUSTOMER_SESSION_KEY, JSON.stringify(profile));
-            } catch (e) {
-              console.warn('Storage warning', e);
+        // Verify if user identity is recorded in the Firestore /admins/{uid} registry (non-blocking)
+        const adminRef = doc(db, 'admins', currentUser.uid);
+        getDoc(adminRef)
+          .then((adminSnap) => {
+            setIsAdminDoc(adminSnap.exists());
+          })
+          .catch(() => {
+            setIsAdminDoc(false);
+          });
+
+        // Try fetching customer profile for this UID (non-blocking)
+        fetchCustomerProfile(currentUser.uid)
+          .then((profile) => {
+            if (profile) {
+              setCustomerProfile(profile);
+              try {
+                localStorage.setItem(CUSTOMER_SESSION_KEY, JSON.stringify(profile));
+              } catch (e) {
+                console.warn('Storage warning', e);
+              }
             }
-          }
-        } catch (e) {
-          console.warn('Could not load customer profile', e);
-        }
+          })
+          .catch((e) => {
+            console.warn('Could not load customer profile', e);
+          });
       } else {
         setIsAdminDoc(false);
         // Only clear customer profile if not an offline fallback session
@@ -117,7 +139,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setCustomerProfile(null);
         }
       }
-      setIsLoading(false);
     });
 
     return () => unsubscribe();
@@ -295,38 +316,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Admin Google Sign In (Popup with automatic fallback to redirect on mobile/Android)
+  // Admin Google Sign In (Popup Mode with clean error reporting)
   const signInWithGoogle = async () => {
     setError(null);
     try {
-      await signInWithPopup(auth, googleProvider);
+      const provider = createGoogleProvider();
+      await signInWithPopup(auth, provider);
     } catch (err: unknown) {
       const code = (err as { code?: string })?.code || '';
       const rawMsg = err instanceof Error ? err.message : 'Google sign-in failed';
       console.error('Sign-in error:', err);
 
-      // On Android and mobile browsers, popups are frequently blocked. Automatically attempt redirect.
-      if (
-        code === 'auth/popup-blocked' || 
-        code === 'auth/cancelled-popup-request' ||
-        rawMsg.includes('popup-blocked')
-      ) {
-        console.log('Popup was blocked by the browser. Falling back to redirect mode...');
-        try {
-          await signInWithRedirect(auth, googleProvider);
-          return;
-        } catch (redirectErr) {
-          console.error('Redirect fallback error:', redirectErr);
-        }
-      }
-
       let message = rawMsg;
       if (code === 'auth/unauthorized-domain' || rawMsg.includes('unauthorized-domain')) {
         message = 'Firebase Error (auth/unauthorized-domain): This domain (icontech-store.vercel.app) is not authorized in Firebase Authentication. Please add "icontech-store.vercel.app" to Firebase Console > Authentication > Settings > Authorized domains.';
-      } else if (code === 'auth/popup-blocked') {
-        message = 'The Google login popup was blocked by your browser. Please allow popups or use "Sign in with Google (Redirect Mode)".';
+      } else if (code === 'auth/popup-blocked' || rawMsg.includes('popup-blocked')) {
+        message = 'Popup was blocked by your browser. Please tap "Sign in with Google (Redirect Mode — for Android / Mobile)" below to sign in directly without popups.';
+      } else if (code === 'auth/cancelled-popup-request') {
+        message = 'A sign-in window was already open or closed. Please tap again or use Redirect Mode.';
       } else if (code === 'auth/popup-closed-by-user') {
-        message = 'Sign-in window was closed before completion.';
+        message = 'The Google sign-in window was closed before completion. Tap below to try again.';
       }
 
       setError(message);
@@ -334,12 +343,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Explicit Direct Redirect Sign In for Android / Mobile
+  // Explicit Direct Redirect Sign In (Best for Android / Mobile & restricted popup environments)
   const signInWithGoogleRedirect = async () => {
     setError(null);
     try {
-      await signInWithRedirect(auth, googleProvider);
+      sessionStorage.setItem('icontech_auth_redirect_target', 'admin');
+      const provider = createGoogleProvider();
+      await signInWithRedirect(auth, provider);
     } catch (err: unknown) {
+      sessionStorage.removeItem('icontech_auth_redirect_target');
       const code = (err as { code?: string })?.code || '';
       const rawMsg = err instanceof Error ? err.message : 'Google redirect sign-in failed';
       let message = rawMsg;
@@ -354,12 +366,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Universal Sign Out (including admin)
   const signOutUser = async () => {
     try {
+      sessionStorage.removeItem('icontech_auth_redirect_target');
       await signOut(auth);
     } catch (e) {
       console.warn('Sign out warning:', e);
     }
     setCustomerProfile(null);
     setIsAdminDoc(false);
+    setError(null);
     try {
       localStorage.removeItem(CUSTOMER_SESSION_KEY);
     } catch (e) {

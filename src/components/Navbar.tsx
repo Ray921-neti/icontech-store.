@@ -380,10 +380,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Super Admin badge shortcut - strictly visible ONLY when authenticated as Super Admin */}
             {isAdmin && (
               <>
-                <span className="text-white/30 hidden sm:inline">|</span>
+                <span className="text-white/30">|</span>
                 <button
                   onClick={onOpenAdmin}
-                  className="hidden sm:inline-flex items-center px-2 py-0.5 rounded bg-[#FF7900] hover:bg-[#e66c00] text-white text-[10px] font-bold transition cursor-pointer"
+                  className="inline-flex items-center px-2 py-0.5 rounded bg-[#FF7900] hover:bg-[#e66c00] text-white text-[10px] font-bold transition cursor-pointer shadow-xs"
                   title="Super Admin Dashboard"
                 >
                   <ShieldCheck className="w-3 h-3 mr-1 text-white" />
@@ -716,6 +716,30 @@ export const Navbar: React.FC<NavbarProps> = ({
       {/* 4. MOBILE DRAWER MENU */}
       {mobileMenuOpen && (
         <div className="md:hidden bg-white border-b border-[#E5ECF5] px-4 py-4 space-y-4 text-[#10264D] animate-in fade-in shadow-xl">
+          {/* Super Administrator Quick Access */}
+          {isAdmin && (
+            <div className="p-3 bg-[#082B62] rounded-2xl text-white flex items-center justify-between shadow-md border border-[#FF7900]/30">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-8 h-8 rounded-xl bg-[#FF7900] text-white flex items-center justify-center font-bold">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="font-bold text-xs block text-white">Super Administrator</span>
+                  <span className="text-[10px] text-[#DCEBFF]">Verified Control Center</span>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  onOpenAdmin();
+                  setMobileMenuOpen(false);
+                }}
+                className="px-3 py-1.5 bg-[#FF7900] hover:bg-[#e66c00] text-white text-xs font-bold rounded-xl transition shadow-xs cursor-pointer"
+              >
+                Open Admin Hub
+              </button>
+            </div>
+          )}
+
           {/* Mobile Profile State */}
           {isCustomer && customerProfile ? (
             <div className="p-3 bg-[#F3F7FC] border border-[#E5ECF5] rounded-xl flex items-center justify-between">

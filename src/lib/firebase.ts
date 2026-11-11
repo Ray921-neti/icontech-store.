@@ -31,10 +31,17 @@ export const db = initializeFirestore(app, {
 
 // Auth instance
 export const auth = getAuth(app);
-export const googleProvider = new GoogleAuthProvider();
-googleProvider.setCustomParameters({
-  prompt: 'select_account',
-});
+
+// Provider factory to guarantee a clean OAuth state on every sign-in attempt
+export const createGoogleProvider = (): GoogleAuthProvider => {
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({
+    prompt: 'select_account',
+  });
+  return provider;
+};
+
+export const googleProvider = createGoogleProvider();
 
 // Standardized Firestore error handling enum and interface
 export enum OperationType {

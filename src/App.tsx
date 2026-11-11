@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider, useCart } from './context/CartContext';
 import { Navbar } from './components/Navbar';
 import { HeroBanner } from './components/HeroBanner';
@@ -52,6 +52,7 @@ import {
 
 function Storefront() {
   const { addToCart, setIsCartOpen } = useCart();
+  const { isAdmin } = useAuth();
 
   // Navigation
   const [activeTab, setActiveTab] = useState<string>('home');
@@ -125,6 +126,23 @@ function Storefront() {
     window.addEventListener('hashchange', handleLocationRouting);
     return () => window.removeEventListener('hashchange', handleLocationRouting);
   }, []);
+
+  // Automatically open admin dashboard when Super Admin is authenticated and navigated to #admin or returning from redirect
+  useEffect(() => {
+    if (isAdmin) {
+      const rawHash = window.location.hash.toLowerCase().replace('#', '');
+      const redirectTarget = sessionStorage.getItem('icontech_auth_redirect_target');
+      if (rawHash === 'admin' || redirectTarget === 'admin') {
+        setIsAdminOpen(true);
+        if (redirectTarget === 'admin') {
+          sessionStorage.removeItem('icontech_auth_redirect_target');
+        }
+        if (rawHash !== 'admin') {
+          window.location.hash = '#admin';
+        }
+      }
+    }
+  }, [isAdmin]);
 
   // Update URL hash when tab changes so browser refresh and back/forward buttons work
   const handleTabChange = (tab: string) => {
@@ -662,7 +680,12 @@ function Storefront() {
 
       {/* Admin Dashboard Workspace */}
       {isAdminOpen && (
-        <AdminDashboard onClose={() => setIsAdminOpen(false)} />
+        <AdminDashboard onClose={() => {
+          setIsAdminOpen(false);
+          if (window.location.hash.toLowerCase() === '#admin') {
+            window.location.hash = '#home';
+          }
+        }} />
       )}
     </div>
   );
